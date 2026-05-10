@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronLeft, Check, ChevronDown, MessageSquare, Star } from "lucide-react";
+import { ChevronLeft, Check, ChevronDown, MessageSquare } from "lucide-react";
 import { AppShell } from "../components/AppShell";
 import { IOSSwitch } from "../components/IOSSwitch";
 import { useTasks } from "../components/Hooks";
