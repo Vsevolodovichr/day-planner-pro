@@ -9,38 +9,90 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as NotesRouteImport } from './routes/notes'
+import { Route as GeneralRouteImport } from './routes/general'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TaskRouteImport } from './routes/task.'
+import { Route as NotesRouteImport } from './routes/notes.'
 
+const NotesRoute = NotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GeneralRoute = GeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TaskRoute = TaskRouteImport.update({
+  id: '/task/',
+  path: '/task/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotesRoute = NotesRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => NotesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/general': typeof GeneralRoute
+  '/notes': typeof NotesRouteWithChildren
+  '/notes/': typeof NotesRoute
+  '/task/': typeof TaskRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/general': typeof GeneralRoute
+  '/notes': typeof NotesRoute
+  '/task': typeof TaskRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/general': typeof GeneralRoute
+  '/notes': typeof NotesRouteWithChildren
+  '/notes/': typeof NotesRoute
+  '/task/': typeof TaskRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/general' | '/notes' | '/notes/' | '/task/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/general' | '/notes' | '/task'
+  id: '__root__' | '/' | '/general' | '/notes' | '/notes/' | '/task/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GeneralRoute: typeof GeneralRoute
+  NotesRoute: typeof NotesRouteWithChildren
+  TaskRoute: typeof TaskRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/notes': {
+      id: '/notes'
+      path: '/notes'
+      fullPath: '/notes'
+      preLoaderRoute: typeof NotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/general': {
+      id: '/general'
+      path: '/general'
+      fullPath: '/general'
+      preLoaderRoute: typeof GeneralRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,12 +100,49 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/task/': {
+      id: '/task/'
+      path: '/task'
+      fullPath: '/task/'
+      preLoaderRoute: typeof TaskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notes/': {
+      id: '/notes/'
+      path: '/'
+      fullPath: '/notes/'
+      preLoaderRoute: typeof NotesRouteImport
+      parentRoute: typeof NotesRoute
+    }
   }
 }
 
+interface NotesRouteChildren {
+  NotesRoute: typeof NotesRoute
+}
+
+const NotesRouteChildren: NotesRouteChildren = {
+  NotesRoute: NotesRoute,
+}
+
+const NotesRouteWithChildren = NotesRoute._addFileChildren(NotesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GeneralRoute: GeneralRoute,
+  NotesRoute: NotesRouteWithChildren,
+  TaskRoute: TaskRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
