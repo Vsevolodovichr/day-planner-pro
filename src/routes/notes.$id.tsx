@@ -5,7 +5,7 @@ import { AppShell } from "../components/AppShell";
 import { useNotes } from "../components/Hooks";
 import { uid } from "../lib/storage";
 
-export const Route = createFileRoute("/notes/")({ component: NoteEditor });
+export const Route = createFileRoute("/notes/$id")({ component: NoteEditor });
 
 function NoteEditor() {
   const { id } = useParams({ from: "/notes/$id" });
