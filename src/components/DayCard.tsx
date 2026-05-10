@@ -4,6 +4,8 @@ import { CircularPlusButton } from "./CircularPlusButton";
 import { ProgressBar } from "./ProgressBar";
 import { TaskRow } from "./TaskRow";
 import { useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 export function DayCard({ iso, tasks, isToday, onToggle, onSelect, onMenu }: {
   iso: string; tasks: Task[]; isToday: boolean;
@@ -17,6 +19,8 @@ export function DayCard({ iso, tasks, isToday, onToggle, onSelect, onMenu }: {
   const completed = tasks.filter(t=>t.completed).length;
   const total = tasks.length;
   const headerLabel = total === 0 ? "Завдання відсутні" : `${total} ${total === 1 ? "завдання" : "завдань"}`;
+  const [expanded, setExpanded] = useState(true);
+  const canToggle = total > 0;
 
   return (
     <div className="mx-3 mb-3 rounded-[20px] overflow-hidden flex ios-shadow" style={{ background: "var(--card)", border: "1px solid var(--border-soft)" }}>
@@ -30,16 +34,28 @@ export function DayCard({ iso, tasks, isToday, onToggle, onSelect, onMenu }: {
       </div>
       <div className="flex-1 flex flex-col">
         <div className="flex items-center px-4 pt-4 pb-3 gap-3">
-          <div className="flex-1">
+          <button
+            type="button"
+            onClick={() => canToggle && setExpanded(e => !e)}
+            className="flex-1 text-left"
+            style={{ cursor: canToggle ? "pointer" : "default" }}
+          >
             <div className="text-[15px] mb-2" style={{ color: total===0 ? "var(--text-dim)" : "var(--text-main)" }}>{headerLabel}</div>
             <div className="flex items-center gap-3">
               <span className="text-[13px]" style={{ color: "var(--text-muted)" }}>{completed}/{total}</span>
               <div className="flex-1"><ProgressBar value={completed} total={total} /></div>
+              {canToggle && (
+                <ChevronDown
+                  size={18}
+                  color="var(--text-muted)"
+                  style={{ transition: "transform 0.2s", transform: expanded ? "rotate(0deg)" : "rotate(-90deg)" }}
+                />
+              )}
             </div>
-          </div>
+          </button>
           <CircularPlusButton accent={isToday} onClick={() => navigate({ to: "/task/$date", params: { date: iso } })} />
         </div>
-        {tasks.length > 0 && (
+        {tasks.length > 0 && expanded && (
           <div className="border-t" style={{ borderColor: "var(--border-soft)" }}>
             {tasks.map(t => <TaskRow key={t.id} task={t} onToggle={() => onToggle(t.id)} onSelect={() => onSelect(t.id)} onMenu={() => onMenu(t.id)} />)}
           </div>
