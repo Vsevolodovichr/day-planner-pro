@@ -9,38 +9,160 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SearchRouteImport } from './routes/search'
+import { Route as NotesRouteImport } from './routes/notes'
+import { Route as GeneralRouteImport } from './routes/general'
+import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TaskDateRouteImport } from './routes/task.$date'
+import { Route as SettingsNotificationsRouteImport } from './routes/settings.notifications'
+import { Route as NotesIdRouteImport } from './routes/notes.$id'
 
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotesRoute = NotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GeneralRoute = GeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TaskDateRoute = TaskDateRouteImport.update({
+  id: '/task/$date',
+  path: '/task/$date',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsNotificationsRoute = SettingsNotificationsRouteImport.update({
+  id: '/settings/notifications',
+  path: '/settings/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotesIdRoute = NotesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => NotesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
+  '/general': typeof GeneralRoute
+  '/notes': typeof NotesRouteWithChildren
+  '/search': typeof SearchRoute
+  '/notes/$id': typeof NotesIdRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/task/$date': typeof TaskDateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
+  '/general': typeof GeneralRoute
+  '/notes': typeof NotesRouteWithChildren
+  '/search': typeof SearchRoute
+  '/notes/$id': typeof NotesIdRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/task/$date': typeof TaskDateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
+  '/general': typeof GeneralRoute
+  '/notes': typeof NotesRouteWithChildren
+  '/search': typeof SearchRoute
+  '/notes/$id': typeof NotesIdRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
+  '/task/$date': typeof TaskDateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/calendar'
+    | '/general'
+    | '/notes'
+    | '/search'
+    | '/notes/$id'
+    | '/settings/notifications'
+    | '/task/$date'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/calendar'
+    | '/general'
+    | '/notes'
+    | '/search'
+    | '/notes/$id'
+    | '/settings/notifications'
+    | '/task/$date'
+  id:
+    | '__root__'
+    | '/'
+    | '/calendar'
+    | '/general'
+    | '/notes'
+    | '/search'
+    | '/notes/$id'
+    | '/settings/notifications'
+    | '/task/$date'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CalendarRoute: typeof CalendarRoute
+  GeneralRoute: typeof GeneralRoute
+  NotesRoute: typeof NotesRouteWithChildren
+  SearchRoute: typeof SearchRoute
+  SettingsNotificationsRoute: typeof SettingsNotificationsRoute
+  TaskDateRoute: typeof TaskDateRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notes': {
+      id: '/notes'
+      path: '/notes'
+      fullPath: '/notes'
+      preLoaderRoute: typeof NotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/general': {
+      id: '/general'
+      path: '/general'
+      fullPath: '/general'
+      preLoaderRoute: typeof GeneralRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +170,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/task/$date': {
+      id: '/task/$date'
+      path: '/task/$date'
+      fullPath: '/task/$date'
+      preLoaderRoute: typeof TaskDateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/notifications': {
+      id: '/settings/notifications'
+      path: '/settings/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof SettingsNotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notes/$id': {
+      id: '/notes/$id'
+      path: '/$id'
+      fullPath: '/notes/$id'
+      preLoaderRoute: typeof NotesIdRouteImport
+      parentRoute: typeof NotesRoute
+    }
   }
 }
 
+interface NotesRouteChildren {
+  NotesIdRoute: typeof NotesIdRoute
+}
+
+const NotesRouteChildren: NotesRouteChildren = {
+  NotesIdRoute: NotesIdRoute,
+}
+
+const NotesRouteWithChildren = NotesRoute._addFileChildren(NotesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CalendarRoute: CalendarRoute,
+  GeneralRoute: GeneralRoute,
+  NotesRoute: NotesRouteWithChildren,
+  SearchRoute: SearchRoute,
+  SettingsNotificationsRoute: SettingsNotificationsRoute,
+  TaskDateRoute: TaskDateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
