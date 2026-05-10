@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronLeft, Check, ChevronDown, MessageSquare, Star } from "lucide-react";
+import { ChevronLeft, Check, ChevronDown, MessageSquare } from "lucide-react";
 import { AppShell } from "../components/AppShell";
 import { IOSSwitch } from "../components/IOSSwitch";
 import { useTasks } from "../components/Hooks";
@@ -41,7 +41,7 @@ function TaskEditor() {
         <Row label="Вказати час" right={<IOSSwitch checked={hasTime} onChange={setHasTime} />} />
         <Row label="Повтор завдання" right={<IOSSwitch checked={repeat} onChange={setRepeat} />} />
         <Row label="Автоперенесення завдань" right={
-          <div className="flex items-center gap-3"><Star size={20} fill="var(--warning-star)" color="var(--warning-star)" /><IOSSwitch checked={autoMove} onChange={setAutoMove} /></div>
+          <IOSSwitch checked={autoMove} onChange={setAutoMove} />
         } />
       </div>
     </AppShell>
