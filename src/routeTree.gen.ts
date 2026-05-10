@@ -14,9 +14,9 @@ import { Route as NotesRouteImport } from './routes/notes'
 import { Route as GeneralRouteImport } from './routes/general'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TaskDateRouteImport } from './routes/task.$date'
 import { Route as SettingsNotificationsRouteImport } from './routes/settings.notifications'
-import { Route as TaskRouteImport } from './routes/task.'
-import { Route as NotesRouteImport } from './routes/notes.'
+import { Route as NotesIdRouteImport } from './routes/notes.$id'
 
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
@@ -43,19 +43,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TaskDateRoute = TaskDateRouteImport.update({
+  id: '/task/$date',
+  path: '/task/$date',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsNotificationsRoute = SettingsNotificationsRouteImport.update({
   id: '/settings/notifications',
   path: '/settings/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TaskRoute = TaskRouteImport.update({
-  id: '/task/',
-  path: '/task/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NotesRoute = NotesRouteImport.update({
-  id: '/',
-  path: '/',
+const NotesIdRoute = NotesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
   getParentRoute: () => NotesRoute,
 } as any)
 
@@ -65,18 +65,19 @@ export interface FileRoutesByFullPath {
   '/general': typeof GeneralRoute
   '/notes': typeof NotesRouteWithChildren
   '/search': typeof SearchRoute
-  '/notes/': typeof NotesRoute
-  '/task/': typeof TaskRoute
+  '/notes/$id': typeof NotesIdRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
+  '/task/$date': typeof TaskDateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calendar': typeof CalendarRoute
   '/general': typeof GeneralRoute
+  '/notes': typeof NotesRouteWithChildren
   '/search': typeof SearchRoute
-  '/notes': typeof NotesRoute
-  '/task': typeof TaskRoute
+  '/notes/$id': typeof NotesIdRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
+  '/task/$date': typeof TaskDateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -85,9 +86,9 @@ export interface FileRoutesById {
   '/general': typeof GeneralRoute
   '/notes': typeof NotesRouteWithChildren
   '/search': typeof SearchRoute
-  '/notes/': typeof NotesRoute
-  '/task/': typeof TaskRoute
+  '/notes/$id': typeof NotesIdRoute
   '/settings/notifications': typeof SettingsNotificationsRoute
+  '/task/$date': typeof TaskDateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,18 +98,19 @@ export interface FileRouteTypes {
     | '/general'
     | '/notes'
     | '/search'
-    | '/notes/'
-    | '/task/'
+    | '/notes/$id'
     | '/settings/notifications'
+    | '/task/$date'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/calendar'
     | '/general'
-    | '/search'
     | '/notes'
-    | '/task'
+    | '/search'
+    | '/notes/$id'
     | '/settings/notifications'
+    | '/task/$date'
   id:
     | '__root__'
     | '/'
@@ -116,9 +118,9 @@ export interface FileRouteTypes {
     | '/general'
     | '/notes'
     | '/search'
-    | '/notes/'
-    | '/task/'
+    | '/notes/$id'
     | '/settings/notifications'
+    | '/task/$date'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -127,8 +129,8 @@ export interface RootRouteChildren {
   GeneralRoute: typeof GeneralRoute
   NotesRoute: typeof NotesRouteWithChildren
   SearchRoute: typeof SearchRoute
-  TaskRoute: typeof TaskRoute
   SettingsNotificationsRoute: typeof SettingsNotificationsRoute
+  TaskDateRoute: typeof TaskDateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -168,6 +170,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/task/$date': {
+      id: '/task/$date'
+      path: '/task/$date'
+      fullPath: '/task/$date'
+      preLoaderRoute: typeof TaskDateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/notifications': {
       id: '/settings/notifications'
       path: '/settings/notifications'
@@ -175,29 +184,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsNotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/task/': {
-      id: '/task/'
-      path: '/task'
-      fullPath: '/task/'
-      preLoaderRoute: typeof TaskRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/notes/': {
-      id: '/notes/'
-      path: '/'
-      fullPath: '/notes/'
-      preLoaderRoute: typeof NotesRouteImport
+    '/notes/$id': {
+      id: '/notes/$id'
+      path: '/$id'
+      fullPath: '/notes/$id'
+      preLoaderRoute: typeof NotesIdRouteImport
       parentRoute: typeof NotesRoute
     }
   }
 }
 
 interface NotesRouteChildren {
-  NotesRoute: typeof NotesRoute
+  NotesIdRoute: typeof NotesIdRoute
 }
 
 const NotesRouteChildren: NotesRouteChildren = {
-  NotesRoute: NotesRoute,
+  NotesIdRoute: NotesIdRoute,
 }
 
 const NotesRouteWithChildren = NotesRoute._addFileChildren(NotesRouteChildren)
@@ -208,8 +210,8 @@ const rootRouteChildren: RootRouteChildren = {
   GeneralRoute: GeneralRoute,
   NotesRoute: NotesRouteWithChildren,
   SearchRoute: SearchRoute,
-  TaskRoute: TaskRoute,
   SettingsNotificationsRoute: SettingsNotificationsRoute,
+  TaskDateRoute: TaskDateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

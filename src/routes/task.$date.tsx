@@ -7,7 +7,7 @@ import { useTasks } from "../components/Hooks";
 import { uid } from "../lib/storage";
 import { formatLong } from "../lib/date";
 
-export const Route = createFileRoute("/task/")({ component: TaskEditor });
+export const Route = createFileRoute("/task/$date")({ component: TaskEditor });
 
 function TaskEditor() {
   const { date } = useParams({ from: "/task/$date" });
