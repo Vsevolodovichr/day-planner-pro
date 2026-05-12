@@ -14,7 +14,7 @@ export default defineConfig({
       includeAssets: ["icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png"],
       manifest: {
         name: "Мої задачі",
-        short_name: "Одинадцять хвилин",
+        short_name: "11 хвилин",
         start_url: "/",
         scope: "/",
         display: "standalone",
