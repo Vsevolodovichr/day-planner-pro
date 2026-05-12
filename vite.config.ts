@@ -14,7 +14,7 @@ export default defineConfig({
       includeAssets: ["icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png"],
       manifest: {
         name: "Мої задачі",
-        short_name: "Задачі",
+        short_name: "Одинадцять хвилин",
         start_url: "/",
         scope: "/",
         display: "standalone",
@@ -32,12 +32,6 @@ export default defineConfig({
             src: "/icons/icon-512.png",
             sizes: "512x512",
             type: "image/png",
-            purpose: "any maskable",
-          },
-          {
-            src: "/icons/icon.svg",
-            sizes: "any",
-            type: "image/svg+xml",
             purpose: "any maskable",
           },
         ],
