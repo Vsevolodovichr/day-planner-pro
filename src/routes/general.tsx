@@ -36,38 +36,52 @@ function General() {
   };
   return (
     <AppShell>
-      <div className="px-[18px] pt-6">
+      <div className="px-4.5 pt-6">
         <div
-          className="flex items-center gap-3 rounded-[20px] px-4 h-[66px]"
-          style={{ background: 'var(--card-dark)', boxShadow: '0 10px 22px rgba(0,0,0,0.26)' }}
+          className="flex items-center justify-between rounded-[20px] px-4 h-16.5"
+          style={{ background: 'var(--card-dark)' }}
         >
           <div className="flex-1 flex h-full">
-            {(['tasks', 'folders'] as const).map((k) => (
+            {(['tasks'] as const).map((k) => (
               <button
                 key={k}
                 onClick={() => setTab(k)}
-                className="flex-1 text-left text-[23px] transition-colors"
+                className="flex-1 text-left text-[16px] transition-colors"
                 style={{ color: tab === k ? 'var(--accent)' : 'var(--text-dim)' }}
               >
-                {k === 'tasks' ? (
+            
                   <>
-                    Загальні завдання <sup className="text-[12px]">{generalTasks.length}</sup>
+                    Загальні завдання <sup className="text-[10px]">{generalTasks.length}</sup>
                   </>
-                ) : (
-                  'Папки'
-                )}
+                            
               </button>
             ))}
           </div>
+
+           <div className="flex-1 flex h-full">
+            {(['folders'] as const).map((k) => (
+              <button
+                key={k}
+                onClick={() => setTab(k)}
+                className="flex-1  text-[16px] transition-colors "
+                style={{ color: tab === k ? 'var(--accent)' : 'var(--text-dim)' }}
+              >
+            
+                  <>
+                    Папки 
+                    </>                              
+              </button>
+               ))}
+              </div>
           <button
             onClick={add}
-            className="h-[52px] w-[52px] rounded-full flex items-center justify-center shrink-0"
+            className="h-7 w-7 rounded-full flex items-center justify-center shrink-0"
             style={{
               background: 'var(--accent-strong)',
-              boxShadow: '0 0 16px color-mix(in srgb, var(--accent) 28%, transparent)',
+              boxShadow: '0 0 8px color-mix(in srgb, black 28%, transparent)',
             }}
           >
-            <Plus size={30} strokeWidth={1.6} color="#D7FFFC" />
+            <Plus size={24} strokeWidth={1.6} color="#D7FFFC" />
           </button>
         </div>
         {tab === 'tasks' && generalTasks.length > 0 && (

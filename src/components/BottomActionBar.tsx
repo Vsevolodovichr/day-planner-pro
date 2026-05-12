@@ -8,7 +8,7 @@ const items = [
 export function BottomActionBar({ onAction }: { onAction: (k: string) => void }) {
   return (
     <div
-      className="fixed bottom-20 left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] sm:w-[428px] flex justify-around items-center rounded-[18px] overflow-hidden"
+      className="fixed bottom-20 left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] sm:w-107 flex justify-around items-center rounded-[18px] overflow-hidden"
       style={{
         background: 'var(--top-bar)',
         height: 104,
