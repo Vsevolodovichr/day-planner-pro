@@ -1,14 +1,15 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
+  Navigate,
   Outlet,
   Link,
   createRootRouteWithContext,
+  useLocation,
   useRouter,
-  HeadContent,
-  Scripts,
-} from "@tanstack/react-router";
+} from '@tanstack/react-router';
 
-import appCss from "../styles.css?url";
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import appCss from '../fornastya.css?url';
 
 function NotFoundComponent() {
   return (
@@ -70,50 +71,50 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { charSet: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { property: 'og:type', content: 'website' },
+      { name: 'twitter:card', content: 'summary' },
     ],
     links: [
       {
-        rel: "stylesheet",
+        rel: 'stylesheet',
         href: appCss,
       },
     ],
   }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
-
-function RootShell({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <AuthProvider>
+        <AuthGate />
+      </AuthProvider>
     </QueryClientProvider>
   );
+}
+
+function AuthGate() {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  const isLoginRoute = location.pathname === '/login';
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#050607]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!user && !isLoginRoute) return <Navigate to="/login" replace />;
+  if (user && isLoginRoute) return <Navigate to="/" replace />;
+
+  return <Outlet />;
 }

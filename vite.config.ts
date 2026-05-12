@@ -1,15 +1,74 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - tanstackStart, viteReact, tailwindcss, tsConfigPaths, cloudflare (build-only),
-//     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
-//     error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... } }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+import { VitePWA } from "vite-plugin-pwa";
 
-// Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-// @cloudflare/vite-plugin builds from this — wrangler.jsonc main alone is insufficient.
 export default defineConfig({
-  tanstackStart: {
-    server: { entry: "server" },
+  plugins: [
+    react(),
+    tsconfigPaths(),
+    tailwindcss(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png"],
+      manifest: {
+        name: "Мої задачі",
+        short_name: "Задачі",
+        start_url: "/",
+        scope: "/",
+        display: "standalone",
+        lang: "uk",
+        background_color: "#050607",
+        theme_color: "#42FFF4",
+        icons: [
+          {
+            src: "/icons/icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/icons/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+          {
+            src: "/icons/icon.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+            purpose: "any maskable",
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{css,html,ico,js,svg,webmanifest,woff,woff2}"],
+        navigateFallback: "/index.html",
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.origin === "https://api.hatosfera-crm.pp.ua",
+            handler: "NetworkOnly",
+            options: {
+              cacheName: "day-planner-api-network-only",
+            },
+          },
+        ],
+      },
+    }),
+  ],
+  build: {
+    outDir: "dist",
+    assetsDir: "assets",
+  },
+  server: {
+    host: "::",
+    port: 8080,
+    proxy: {
+      "/api": {
+        target: "https://api.hatosfera-crm.pp.ua",
+        changeOrigin: true,
+      },
+    },
   },
 });

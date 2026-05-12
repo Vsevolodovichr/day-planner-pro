@@ -1,0 +1,86 @@
+:root {
+  --app-bg: #111416;
+  --top-bar: #202020;
+  --card: #23252a;
+  --card-soft: #292c31;
+  --card-dark: #18191c;
+  --date-panel: #171817;
+  --date-panel-active: #42fff4;
+  --border-soft: rgba(255, 255, 255, 0.1);
+  --text-main: #f3f4f5;
+  --text-muted: #a1a3a7;
+  --text-dim: #686a6e;
+  --accent: #42fff4;
+  --accent-strong: #16c9c2;
+  --accent-dark: #087c78;
+  --progress-bg: #626466;
+  --warning-star: #ffbe26;
+  --ios-blue: #0a84ff;
+}
+
+.fornastya-root {
+  color: var(--text-main);
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  min-height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+input,
+textarea,
+button {
+  font-family: inherit;
+  color: inherit;
+}
+input:focus,
+textarea:focus {
+  outline: none;
+}
+
+.bg-appBg {
+  background-color: var(--app-bg);
+}
+.bg-topBar {
+  background-color: var(--top-bar);
+}
+.bg-cardSoft {
+  background-color: var(--card-soft);
+}
+.border-borderSoft {
+  border-color: var(--border-soft);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.ios-shadow {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.cyan-glow {
+  box-shadow:
+    0 0 0 1px rgba(66, 255, 244, 0.2),
+    0 0 24px rgba(66, 255, 244, 0.15);
+}
+
+.fornastya-phone {
+  background: var(--app-bg);
+}
+
+@media (min-width: 640px) {
+  .fornastya-phone {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+  }
+}

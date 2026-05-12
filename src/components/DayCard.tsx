@@ -1,66 +1,117 @@
-import { Task } from "../types";
-import { fromISO, UA_DAYS_SHORT, UA_MONTHS } from "../lib/date";
-import { CircularPlusButton } from "./CircularPlusButton";
-import { ProgressBar } from "./ProgressBar";
-import { TaskRow } from "./TaskRow";
-import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { Task } from '../types';
+import { fromISO, UA_DAYS_SHORT, UA_MONTHS } from '../lib/date';
+import { CircularPlusButton } from './CircularPlusButton';
+import { ProgressBar } from './ProgressBar';
+import { TaskRow } from './TaskRow';
+import { useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
 
-export function DayCard({ iso, tasks, isToday, onToggle, onSelect, onMenu }: {
-  iso: string; tasks: Task[]; isToday: boolean;
-  onToggle: (id: string) => void; onSelect: (id: string) => void; onMenu: (id: string) => void;
+export function DayCard({
+  iso,
+  tasks,
+  isToday,
+  position,
+  onToggle,
+  onSelect,
+  onMenu,
+  selectedIds = [],
+}: {
+  iso: string;
+  tasks: Task[];
+  isToday: boolean;
+  position: 'first' | 'middle' | 'last';
+  onToggle: (id: string) => void;
+  onSelect: (id: string) => void;
+  onMenu: (id: string) => void;
+  selectedIds?: string[];
 }) {
   const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
   const d = fromISO(iso);
   const dayIdx = d.getDay();
   const dayLabel = UA_DAYS_SHORT[dayIdx];
   const isSat = dayIdx === 6;
-  const completed = tasks.filter(t=>t.completed).length;
+  const isSun = dayIdx === 0;
+  const completed = tasks.filter((t) => t.completed).length;
   const total = tasks.length;
-  const headerLabel = total === 0 ? "Завдання відсутні" : `${total} ${total === 1 ? "завдання" : "завдань"}`;
-  const [expanded, setExpanded] = useState(true);
-  const canToggle = total > 0;
+  const undone = total - completed;
+  const headerLabel =
+    total === 0
+      ? 'Завдання відсутні'
+      : `${undone} ${undone === 1 ? 'невирішене завдання' : 'невирішених завдання'}`;
+  const dateColor = isSat || isSun ? '#FF1515' : isToday ? '#0B1515' : 'var(--text-main)';
+  const panelBg = isToday ? 'var(--date-panel-active)' : 'var(--date-panel)';
+  const collapsedRadius = 'rounded-[8px]';
 
   return (
-    <div className="mx-3 mb-3 rounded-[20px] overflow-hidden flex ios-shadow" style={{ background: "var(--card)", border: "1px solid var(--border-soft)" }}>
-      <div className="flex flex-col items-center justify-center py-4 px-2" style={{
-        width: 78,
-        background: isToday ? "var(--date-panel-active)" : "var(--date-panel)",
-      }}>
-        <span className="text-[14px]" style={{ color: isSat ? "#FF3B30" : isToday ? "var(--accent)" : "var(--text-muted)" }}>{dayLabel}</span>
-        <span className="text-[34px] leading-none font-light mt-1" style={{ color: isToday ? "var(--accent)" : "var(--text-main)" }}>{d.getDate()}</span>
-        <span className="text-[12px] mt-1" style={{ color: isToday ? "var(--accent)" : "var(--text-dim)" }}>{UA_MONTHS[d.getMonth()]}</span>
-      </div>
-      <div className="flex-1 flex flex-col">
-        <div className="flex items-center px-4 pt-4 pb-3 gap-3">
-          <button
-            type="button"
-            onClick={() => canToggle && setExpanded(e => !e)}
-            className="flex-1 text-left"
-            style={{ cursor: canToggle ? "pointer" : "default" }}
-          >
-            <div className="text-[15px] mb-2" style={{ color: total===0 ? "var(--text-dim)" : "var(--text-main)" }}>{headerLabel}</div>
-            <div className="flex items-center gap-3">
-              <span className="text-[13px]" style={{ color: "var(--text-muted)" }}>{completed}/{total}</span>
-              <div className="flex-1"><ProgressBar value={completed} total={total} /></div>
-              {canToggle && (
-                <ChevronDown
-                  size={18}
-                  color="var(--text-muted)"
-                  style={{ transition: "transform 0.2s", transform: expanded ? "rotate(0deg)" : "rotate(-90deg)" }}
-                />
-              )}
-            </div>
-          </button>
-          <CircularPlusButton accent={isToday} onClick={() => navigate({ to: "/task/$date", params: { date: iso } })} />
+    <section className={`${expanded ? 'flex-none' : ''}${position === 'first' ? '' : ' mt-1'}`}>
+      <div
+        className={`${expanded ? 'rounded-[8px]' : collapsedRadius} min-h-[96px] overflow-hidden flex cursor-pointer`}
+        onClick={() => total > 0 && setExpanded((value) => !value)}
+        style={{
+          background: total > 0 ? '#181919' : '#26262c',
+          border: '1px solid var(--border-soft)',
+        }}
+      >
+        <div
+          className="flex flex-col justify-between py-2 px-2.5"
+          style={{ width: 70, background: panelBg, color: dateColor }}
+        >
+          <span className="text-[14px] leading-none">{dayLabel}</span>
+          <span className="text-[30px] leading-none font-light text-center">{d.getDate()}</span>
+          <span className="text-[14px] leading-none">{UA_MONTHS[d.getMonth()]}</span>
         </div>
-        {tasks.length > 0 && expanded && (
-          <div className="border-t" style={{ borderColor: "var(--border-soft)" }}>
-            {tasks.map(t => <TaskRow key={t.id} task={t} onToggle={() => onToggle(t.id)} onSelect={() => onSelect(t.id)} onMenu={() => onMenu(t.id)} />)}
+        <div className="flex-1 flex items-center gap-3 px-4 py-3">
+          <div className="flex-1 min-w-0">
+            <div
+              className="text-[16px] leading-tight mb-2 truncate"
+              style={{ color: total === 0 ? 'var(--text-main)' : 'var(--accent)' }}
+            >
+              {headerLabel}
+            </div>
+            <div className="flex items-center gap-4">
+              <span
+                className="text-[13px]"
+                style={{ color: total === 0 ? 'var(--text-main)' : 'var(--accent)' }}
+              >
+                {completed}/{total}
+              </span>
+              <div className="flex-1">
+                <ProgressBar value={completed} total={total} />
+              </div>
+            </div>
           </div>
-        )}
+          <div className="shrink-0">
+            <CircularPlusButton
+              accent={isToday || total > 0}
+              size={42}
+              onClick={(event) => {
+                event.stopPropagation();
+                navigate({ to: '/task/$date', params: { date: iso } });
+              }}
+            />
+          </div>
+        </div>
       </div>
-    </div>
+      {expanded && tasks.length > 0 && (
+        <div
+          className="overflow-hidden rounded-b-[8px]"
+          onClick={(event) => event.stopPropagation()}
+          style={{ background: 'var(--card-soft)' }}
+        >
+          {tasks.map((t) => (
+            <TaskRow
+              key={t.id}
+              task={t}
+              variant="list"
+              selected={selectedIds.includes(t.id)}
+              onToggle={() => onToggle(t.id)}
+              onSelect={() => onSelect(t.id)}
+              onMenu={() => onMenu(t.id)}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
