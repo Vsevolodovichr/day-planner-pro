@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(cd \"D:\\\\Progects\\\\vs\\\\day-planner-pro\" && grep -n \"showToolbar\\\\|showNav\\\\|BottomActionBar\\\\|CircularPlusButton\\\\|ProgressBar\\\\|TopToolbar\" src/routes/login.tsx src/routes/notes.tsx src/routes/notes.\\\\$id.tsx src/routes/settings.notifications.tsx 2>&1 | head -40)",
+      "Bash(git checkout *)",
+      "Read(//d/Progects/vs/day-planner-pro/src/routes/**)"
+    ]
+  }
+}
