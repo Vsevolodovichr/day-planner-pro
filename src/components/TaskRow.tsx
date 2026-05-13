@@ -262,7 +262,7 @@ export function TaskRow({
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'center',
-            padding: '0 14px calc(96px + env(safe-area-inset-bottom))',
+            padding: '0 14px var(--app-shell-main-bottom, calc(96px + env(safe-area-inset-bottom)))',
           }}
         >
           <div

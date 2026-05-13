@@ -15,16 +15,18 @@ export function AppShell({
   }, []);
 
   return (
-    <div className="min-h-full w-full flex justify-center bg-transparent">
+    <div className="app-shell-root min-h-full w-full flex justify-center bg-transparent">
       <div
-        className="fornastya-phone relative w-full min-h-[100dvh] flex flex-col"
+        className={`fornastya-phone app-shell-frame relative w-full min-h-[100dvh] flex flex-col ${
+          showToolbar ? 'has-toolbar' : 'no-toolbar'
+        }`}
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <main
-          className="flex-1 overflow-y-auto no-scrollbar"
+          className="app-shell-main flex-1 overflow-y-auto no-scrollbar"
           style={{
             paddingBottom: showToolbar
-              ? `calc(96px + env(safe-area-inset-bottom))`
+              ? `var(--app-shell-main-bottom, calc(96px + env(safe-area-inset-bottom)))`
               : `env(safe-area-inset-bottom)`,
           }}
         >

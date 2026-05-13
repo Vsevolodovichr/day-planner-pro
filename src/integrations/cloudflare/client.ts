@@ -13,14 +13,7 @@ import { z } from 'zod';
 
 const API_URL = getApiUrl();
 const PUSH_AUTH_TOKEN_MESSAGE = 'PUSH_AUTH_TOKEN_UPDATED';
-const INVALIDATE_API_CACHE_MESSAGE = 'INVALIDATE_API_CACHE';
 const AUTH_CHANNEL_NAME = 'xatosfera-auth';
-const CACHEABLE_API_PREFIXES = [
-  '/api/properties',
-  '/api/clients',
-  '/api/notes',
-  '/api/calendar-events',
-] as const;
 const AuthTokensSchema = z.object({
   access_token: z.string(),
   refresh_token: z.string(),
@@ -95,31 +88,6 @@ export function syncAuthRuntimeState(token: string | null): void {
   getAuthBroadcastChannel()?.postMessage({ type: PUSH_AUTH_TOKEN_MESSAGE, token });
 }
 
-function getApiCachePrefix(rawUrl: string): string | null {
-  try {
-    const baseUrl = typeof window === 'undefined' ? API_URL : window.location.origin;
-    const url = new URL(rawUrl, baseUrl);
-    return CACHEABLE_API_PREFIXES.find((prefix) => url.pathname.startsWith(prefix)) ?? null;
-  } catch {
-    return null;
-  }
-}
-
-export function invalidateApiCache(prefix?: string): void {
-  const message = { type: INVALIDATE_API_CACHE_MESSAGE, prefix };
-  postServiceWorkerMessage(message);
-  if (typeof caches !== 'undefined' && !prefix) {
-    void caches.delete('xatosfera-api-cache').catch(() => undefined);
-  }
-}
-
-function invalidateApiCacheAfterMutation(url: string, method: string, response: Response): void {
-  if (!response.ok || method === 'GET' || method === 'HEAD') return;
-
-  const prefix = getApiCachePrefix(url);
-  if (prefix) invalidateApiCache(prefix);
-}
-
 function setTokens(accessToken: string, refreshToken: string) {
   localStorage.setItem('access_token', accessToken);
   localStorage.setItem('refresh_token', refreshToken);
@@ -130,17 +98,16 @@ function clearTokens() {
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
   syncAuthRuntimeState(null);
-  invalidateApiCache();
 }
 
 let isRefreshing = false;
-let refreshSubscribers: Array<(token: string) => void> = [];
+let refreshSubscribers: Array<(token: string | null) => void> = [];
 
-function subscribeTokenRefresh(callback: (token: string) => void) {
+function subscribeTokenRefresh(callback: (token: string | null) => void) {
   refreshSubscribers.push(callback);
 }
 
-function onTokenRefreshed(token: string) {
+function onTokenRefreshFinished(token: string | null) {
   refreshSubscribers.forEach((callback) => callback(token));
   refreshSubscribers = [];
 }
@@ -182,7 +149,6 @@ async function tryRefreshToken(): Promise<string | null> {
 export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getAccessToken();
   const headers = new Headers(options.headers || {});
-  const method = (options.method ?? 'GET').toUpperCase();
 
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
@@ -194,16 +160,18 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
 
   const response = await fetch(url, { ...options, headers });
   if (response.status !== 401) {
-    invalidateApiCacheAfterMutation(url, method, response);
     return response;
   }
 
   if (isRefreshing) {
     return new Promise((resolve) => {
       subscribeTokenRefresh(async (newToken) => {
+        if (!newToken) {
+          resolve(response);
+          return;
+        }
         headers.set('Authorization', `Bearer ${newToken}`);
         const retriedResponse = await fetch(url, { ...options, headers });
-        invalidateApiCacheAfterMutation(url, method, retriedResponse);
         resolve(retriedResponse);
       });
     });
@@ -212,15 +180,14 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
   isRefreshing = true;
   const newToken = await tryRefreshToken();
   isRefreshing = false;
+  onTokenRefreshFinished(newToken);
 
   if (!newToken) {
     return response;
   }
 
-  onTokenRefreshed(newToken);
   headers.set('Authorization', `Bearer ${newToken}`);
   const retriedResponse = await fetch(url, { ...options, headers });
-  invalidateApiCacheAfterMutation(url, method, retriedResponse);
   return retriedResponse;
 }
 
@@ -658,7 +625,6 @@ export const cloudflareApi = {
       }
       if (data.access_token && data.refresh_token) {
         setTokens(data.access_token, data.refresh_token);
-        invalidateApiCache();
       }
       return {
         data: { user: data.user, session: { access_token: data.access_token } },
@@ -679,7 +645,6 @@ export const cloudflareApi = {
       }
       if (data.access_token && data.refresh_token) {
         setTokens(data.access_token, data.refresh_token);
-        invalidateApiCache();
       }
       return { data: { user: data.user }, error: null };
     },

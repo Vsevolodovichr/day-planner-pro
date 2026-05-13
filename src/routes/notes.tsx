@@ -202,7 +202,7 @@ function Notes() {
           aria-label="Створити нотатку"
           style={{
             position: 'fixed',
-            bottom: `calc(96px + env(safe-area-inset-bottom))`,
+            bottom: 'var(--app-shell-action-bottom, calc(96px + env(safe-area-inset-bottom)))',
             right: 18,
             width: 52,
             height: 52,

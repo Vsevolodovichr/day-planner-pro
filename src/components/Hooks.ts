@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   createFolder,
@@ -19,46 +20,36 @@ import {
 import { applyAutoMove } from '../lib/task-utils';
 import type { AppNotification, Folder, Task, Note } from '../types';
 
-let sharedNotes: Note[] = [];
-const noteListeners = new Set<(notes: Note[]) => void>();
-
-function emitNotes(notes: Note[]) {
-  sharedNotes = notes;
-  noteListeners.forEach((listener) => listener(notes));
-}
+const STALE_TIME_MS = 60_000;
 
 export function useTasks() {
   const { user } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const tasksRef = useRef<Task[]>([]);
+  const queryClient = useQueryClient();
+  const queryKey = useMemo(() => ['tasks', user?.id] as const, [user?.id]);
 
-  useEffect(() => {
-    let active = true;
-    if (!user?.id) {
-      tasksRef.current = [];
-      setTasks([]);
-      return;
-    }
-    void getTasks(user?.id).then((loaded) => {
-      if (!active) return;
+  const { data: tasks = [] } = useQuery({
+    queryKey,
+    enabled: Boolean(user?.id),
+    staleTime: STALE_TIME_MS,
+    queryFn: async () => {
+      const loaded = await getTasks();
       const moved = applyAutoMove(loaded);
-      tasksRef.current = moved;
-      setTasks(moved);
       moved
         .filter((task) => loaded.find((item) => item.id === task.id)?.date !== task.date)
         .forEach((task) => {
           void updateTask(task);
         });
-    });
-    return () => {
-      active = false;
-    };
-  }, [user?.id]);
+      return moved;
+    },
+  });
+
+  useEffect(() => {
+    if (!user?.id) queryClient.setQueryData(queryKey, []);
+  }, [queryClient, queryKey, user?.id]);
 
   const save = useCallback((nextTasks: Task[]) => {
-    const previousTasks = tasksRef.current;
-    tasksRef.current = nextTasks;
-    setTasks(nextTasks);
+    const previousTasks = queryClient.getQueryData<Task[]>(queryKey) ?? [];
+    queryClient.setQueryData(queryKey, nextTasks);
     const previousById = new Map(previousTasks.map((task) => [task.id, task]));
     const nextById = new Map(nextTasks.map((task) => [task.id, task]));
 
@@ -72,11 +63,9 @@ export function useTasks() {
       const previous = previousById.get(task.id);
       if (!previous) {
         void createTask(task).then((created) => {
-          setTasks((current) => {
-            const updated = current.map((item) => (item.id === task.id ? created : item));
-            tasksRef.current = updated;
-            return updated;
-          });
+          queryClient.setQueryData<Task[]>(queryKey, (current = []) =>
+            current.map((item) => (item.id === task.id ? created : item)),
+          );
         });
         return;
       }
@@ -84,44 +73,25 @@ export function useTasks() {
         void updateTask(task);
       }
     });
-  }, []);
+  }, [queryClient, queryKey]);
 
   return { tasks, save };
 }
 export function useNotes() {
   const { user } = useAuth();
-  const [notes, setNotes] = useState<Note[]>(sharedNotes);
-  const notesRef = useRef<Note[]>(sharedNotes);
+  const queryClient = useQueryClient();
+  const queryKey = useMemo(() => ['notes', user?.id] as const, [user?.id]);
 
-  useEffect(() => {
-    const listener = (nextNotes: Note[]) => {
-      notesRef.current = nextNotes;
-      setNotes(nextNotes);
-    };
-    noteListeners.add(listener);
-    return () => {
-      noteListeners.delete(listener);
-    };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    if (!user?.id) {
-      emitNotes([]);
-      return;
-    }
-    void getNotes(user?.id).then((loaded) => {
-      if (!active) return;
-      emitNotes(loaded);
-    });
-    return () => {
-      active = false;
-    };
-  }, [user?.id]);
+  const { data: notes = [] } = useQuery({
+    queryKey,
+    enabled: Boolean(user?.id),
+    staleTime: STALE_TIME_MS,
+    queryFn: getNotes,
+  });
 
   const save = useCallback(async (nextNotes: Note[]) => {
-    const previousNotes = notesRef.current;
-    emitNotes(nextNotes);
+    const previousNotes = queryClient.getQueryData<Note[]>(queryKey) ?? [];
+    queryClient.setQueryData(queryKey, nextNotes);
     const previousById = new Map(previousNotes.map((note) => [note.id, note]));
     const nextById = new Map(nextNotes.map((note) => [note.id, note]));
     const operations: Promise<unknown>[] = [];
@@ -137,7 +107,9 @@ export function useNotes() {
       if (!previous) {
         operations.push(
           createNote(note).then((created) => {
-            emitNotes(notesRef.current.map((item) => (item.id === note.id ? created : item)));
+            queryClient.setQueryData<Note[]>(queryKey, (current = []) =>
+              current.map((item) => (item.id === note.id ? created : item)),
+            );
           }),
         );
         return;
@@ -148,37 +120,26 @@ export function useNotes() {
     });
 
     await Promise.all(operations);
-  }, []);
+  }, [queryClient, queryKey]);
 
   return { notes, save };
 }
 
 export function useFolders() {
   const { user } = useAuth();
-  const [folders, setFolders] = useState<Folder[]>([]);
-  const foldersRef = useRef<Folder[]>([]);
+  const queryClient = useQueryClient();
+  const queryKey = useMemo(() => ['folders', user?.id] as const, [user?.id]);
 
-  useEffect(() => {
-    let active = true;
-    if (!user?.id) {
-      foldersRef.current = [];
-      setFolders([]);
-      return;
-    }
-    void getFolders().then((loaded) => {
-      if (!active) return;
-      foldersRef.current = loaded;
-      setFolders(loaded);
-    });
-    return () => {
-      active = false;
-    };
-  }, [user?.id]);
+  const { data: folders = [] } = useQuery({
+    queryKey,
+    enabled: Boolean(user?.id),
+    staleTime: STALE_TIME_MS,
+    queryFn: getFolders,
+  });
 
   const save = useCallback((nextFolders: Folder[]) => {
-    const previousFolders = foldersRef.current;
-    foldersRef.current = nextFolders;
-    setFolders(nextFolders);
+    const previousFolders = queryClient.getQueryData<Folder[]>(queryKey) ?? [];
+    queryClient.setQueryData(queryKey, nextFolders);
 
     const previousById = new Map(previousFolders.map((folder) => [folder.id, folder]));
     const nextById = new Map(nextFolders.map((folder) => [folder.id, folder]));
@@ -193,11 +154,9 @@ export function useFolders() {
       const previous = previousById.get(folder.id);
       if (!previous) {
         void createFolder(folder).then((created) => {
-          setFolders((current) => {
-            const updated = current.map((item) => (item.id === folder.id ? created : item));
-            foldersRef.current = updated;
-            return updated;
-          });
+          queryClient.setQueryData<Folder[]>(queryKey, (current = []) =>
+            current.map((item) => (item.id === folder.id ? created : item)),
+          );
         });
         return;
       }
@@ -205,34 +164,42 @@ export function useFolders() {
         void updateFolder(folder);
       }
     });
-  }, []);
+  }, [queryClient, queryKey]);
 
   return { folders, save };
 }
 
 export function useUnreadNotifications() {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const queryClient = useQueryClient();
+  const queryKey = useMemo(() => ['notifications', 'unread', user?.id] as const, [user?.id]);
 
   const refresh = useCallback(async () => {
-    if (!user?.id) {
-      setNotifications([]);
-      return;
-    }
-    const loaded = await getUnreadNotifications().catch(() => []);
-    setNotifications(loaded);
-  }, [user?.id]);
+    if (!user?.id) return;
+    await queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, queryKey, user?.id]);
+
+  const { data: notifications = [] } = useQuery({
+    queryKey,
+    enabled: Boolean(user?.id),
+    staleTime: 15_000,
+    queryFn: () => getUnreadNotifications().catch(() => []),
+    refetchInterval: (query) => {
+      if (typeof document !== 'undefined' && document.hidden) return false;
+      return query.state.data?.length ? 30_000 : 60_000;
+    },
+  });
 
   useEffect(() => {
-    void refresh();
-    const timer = window.setInterval(() => void refresh(), 30000);
-    return () => window.clearInterval(timer);
-  }, [refresh]);
+    if (!user?.id) queryClient.setQueryData(queryKey, []);
+  }, [queryClient, queryKey, user?.id]);
 
   const markRead = useCallback((id: string) => {
-    setNotifications((current) => current.filter((notification) => notification.id !== id));
+    queryClient.setQueryData<AppNotification[]>(queryKey, (current = []) =>
+      current.filter((notification) => notification.id !== id),
+    );
     void markNotificationRead(id);
-  }, []);
+  }, [queryClient, queryKey]);
 
   return { notifications, refresh, markRead };
 }

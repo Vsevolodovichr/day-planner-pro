@@ -4,7 +4,7 @@ import type { AppNotification, Folder, Note, Task } from '../types';
 
 const API_URL = getApiUrl();
 
-type ApiList<T> = T[] | { data?: T[] };
+type ApiList<T> = T[] | { data?: T[]; hasMore?: boolean; nextCursor?: string | null };
 
 type ApiTask = {
   id: string;
@@ -22,6 +22,7 @@ type ApiTask = {
   planner_order?: number | null;
   created_at?: string | null;
   updated_at?: string | null;
+  subtasks?: ApiSubtask[] | null;
 };
 
 type ApiFolder = {
@@ -61,6 +62,21 @@ function listPayload<T>(payload: ApiList<T>): T[] {
   return Array.isArray(payload) ? payload : (payload.data ?? []);
 }
 
+async function requestPaged<T>(path: string): Promise<T[]> {
+  const items: T[] = [];
+  let cursor: string | null | undefined;
+
+  do {
+    const separator = path.includes('?') ? '&' : '?';
+    const pagePath = cursor ? `${path}${separator}cursor=${encodeURIComponent(cursor)}` : path;
+    const payload = await requestJson<ApiList<T>>(pagePath);
+    items.push(...listPayload(payload));
+    cursor = Array.isArray(payload) || !payload.hasMore ? null : payload.nextCursor;
+  } while (cursor);
+
+  return items;
+}
+
 async function requestJson<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await authFetch(`${API_URL}${path}`, options);
   if (!response.ok) throw new Error(`Request failed (${response.status})`);
@@ -77,7 +93,7 @@ function taskFromApi(task: ApiTask): Task {
     time: dueDate?.includes('T') ? dueDate.slice(11, 16) : undefined,
     completed: task.status === 'done' || Boolean(task.completed_at),
     completedAt: task.completed_at ?? undefined,
-    subtasks: [],
+    subtasks: (task.subtasks ?? []).map(subtaskFromApi),
     repeat: (task.repeat_rule as Task['repeat']) ?? 'none',
     autoMove: Boolean(task.auto_move),
     color: task.color ?? undefined,
@@ -110,18 +126,9 @@ function notificationFromApi(notification: ApiNotification): AppNotification {
   };
 }
 
-export async function getTasks(userId?: string): Promise<Task[]> {
-  const payload = await requestJson<ApiList<ApiTask>>('/api/tasks?limit=100');
-  const tasks = listPayload(payload)
-    .filter((task) => !userId || task.created_by === userId || task.assigned_to === userId)
-    .map(taskFromApi);
-  const withSubtasks = await Promise.all(
-    tasks.map(async (task) => {
-      const subtasks = await getSubtasks(task.id).catch(() => []);
-      return { ...task, subtasks };
-    }),
-  );
-  return withSubtasks;
+export async function getTasks(): Promise<Task[]> {
+  const tasks = await requestPaged<ApiTask>('/api/tasks?limit=100&include=subtasks');
+  return tasks.map(taskFromApi);
 }
 
 function dueDatePayload(task: Task): string | null {
@@ -175,11 +182,9 @@ export async function deleteTask(id: string): Promise<void> {
   await requestJson<{ success: boolean }>(`/api/tasks/${id}`, { method: 'DELETE' });
 }
 
-export async function getNotes(userId?: string): Promise<Note[]> {
-  const payload = await requestJson<ApiList<ApiNote>>('/api/notes?limit=100');
-  return listPayload(payload)
-    .filter((note) => !userId || note.created_by === userId || note.assigned_to === userId)
-    .map(noteFromApi);
+export async function getNotes(): Promise<Note[]> {
+  const notes = await requestPaged<ApiNote>('/api/notes?limit=100');
+  return notes.map(noteFromApi);
 }
 
 export async function createNote(note: Note): Promise<Note> {
@@ -211,7 +216,7 @@ export async function deleteNote(id: string): Promise<void> {
 }
 
 export async function getUnreadNotifications(): Promise<AppNotification[]> {
-  const payload = await requestJson<ApiList<ApiNotification>>('/api/notifications?limit=20');
+  const payload = await requestJson<ApiList<ApiNotification>>('/api/notifications?unread=true&limit=20');
   return listPayload(payload)
     .map(notificationFromApi)
     .filter((notification) => !notification.isRead);

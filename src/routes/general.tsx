@@ -39,7 +39,7 @@ function EditModal({
         alignItems: 'flex-end',
         justifyContent: 'center',
         background: 'rgba(0,0,0,0.55)',
-        padding: '0 14px calc(96px + env(safe-area-inset-bottom))',
+        padding: '0 14px var(--app-shell-main-bottom, calc(96px + env(safe-area-inset-bottom)))',
       }}
     >
       <div
@@ -173,7 +173,7 @@ function SubtaskModal({
         alignItems: 'flex-end',
         justifyContent: 'center',
         background: 'rgba(0,0,0,0.68)',
-        padding: '0 14px calc(96px + env(safe-area-inset-bottom))',
+        padding: '0 14px var(--app-shell-main-bottom, calc(96px + env(safe-area-inset-bottom)))',
       }}
     >
       <div
@@ -681,7 +681,7 @@ function General() {
         aria-label="Створити"
         style={{
           position: 'fixed',
-          bottom: `calc(96px + env(safe-area-inset-bottom))`,
+          bottom: 'var(--app-shell-action-bottom, calc(96px + env(safe-area-inset-bottom)))',
           right: 18,
           width: 52,
           height: 52,

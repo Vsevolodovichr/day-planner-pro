@@ -132,6 +132,12 @@ input:focus, textarea:focus { outline: none; }
 }
 
 .fornastya-phone {
+  --app-shell-main-bottom: calc(96px + env(safe-area-inset-bottom));
+  --app-shell-action-bottom: calc(96px + env(safe-area-inset-bottom));
+  --app-shell-bg-left: 0px;
+  --app-shell-bg-top: 0px;
+  --app-shell-bg-width: 100vw;
+  --app-shell-bg-height: 100dvh;
   background:
     linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.58) 100%),
     var(--bg-image) center / cover no-repeat,
@@ -141,13 +147,27 @@ input:focus, textarea:focus { outline: none; }
   position: relative;
 }
 
-.fornastya-phone::before {
+.fornastya-phone::before,
+.fornastya-phone::after {
   content: "";
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  left: var(--app-shell-bg-left);
+  top: var(--app-shell-bg-top);
+  width: var(--app-shell-bg-width);
+  height: var(--app-shell-bg-height);
   z-index: 0;
   pointer-events: none;
   border-radius: inherit;
+}
+
+.fornastya-phone::before {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.58) 100%),
+    var(--bg-image) center / cover no-repeat,
+    var(--bg-app);
+}
+
+.fornastya-phone::after {
   background:
     linear-gradient(rgba(var(--accent-rgb), 0.64), rgba(var(--accent-rgb), 0.64)),
     var(--bg-image) center / cover no-repeat;
@@ -163,9 +183,113 @@ input:focus, textarea:focus { outline: none; }
   z-index: 1;
 }
 
+.app-bottom-nav {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  width: calc(100% - 24px);
+  max-width: 406px;
+  z-index: 40;
+  border-radius: 24px;
+  padding: 8px 6px;
+  display: flex;
+  align-items: stretch;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%);
+}
+
+.app-bottom-nav__item {
+  flex: 1;
+  min-width: 0;
+  border-radius: 18px;
+  padding: 6px 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-decoration: none;
+  color: rgba(244,245,247,0.46);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.app-bottom-nav__item.is-active {
+  color: var(--gold-text-strong);
+  background: linear-gradient(180deg, var(--accent-18) 0%, var(--accent-04) 100%);
+  border-color: var(--accent-40);
+}
+
+.app-bottom-nav__item span {
+  font-size: 9.5px;
+  letter-spacing: 0.1px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.app-bottom-nav__item.is-active span {
+  font-weight: 600;
+}
+
 @media (min-width: 640px) {
   .fornastya-phone {
+    --app-shell-bg-left: calc((100vw - min(100vw, 430px)) / 2);
+    --app-shell-bg-width: min(100vw, 430px);
     max-width: 430px;
     border-radius: 36px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell-root {
+    min-height: 100dvh;
+    align-items: center;
+    padding: 24px 0;
+  }
+
+  .fornastya-phone {
+    --app-shell-main-bottom: 32px;
+    --app-shell-action-bottom: 32px;
+    --app-shell-bg-left: calc((100vw - min(calc(100vw - 48px), 1180px)) / 2);
+    --app-shell-bg-top: 24px;
+    --app-shell-bg-width: min(calc(100vw - 48px), 1180px);
+    --app-shell-bg-height: calc(100dvh - 48px);
+    width: min(calc(100% - 48px), 1180px);
+    max-width: 1180px;
+    min-height: calc(100dvh - 48px);
+    overflow: hidden;
+  }
+
+  .fornastya-phone.has-toolbar .app-shell-main {
+    padding-left: 124px;
+    padding-right: 24px;
+  }
+
+  .app-bottom-nav {
+    position: absolute;
+    top: 24px;
+    bottom: 24px;
+    left: 24px;
+    width: 84px;
+    max-width: none;
+    padding: 10px 8px;
+    flex-direction: column;
+    gap: 6px;
+    transform: none;
+    border-radius: 28px;
+  }
+
+  .app-bottom-nav__item {
+    flex: 0 0 auto;
+    min-height: 74px;
+    padding: 10px 6px;
+    gap: 6px;
+    border-radius: 20px;
+  }
+
+  .app-bottom-nav__item span {
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
   }
 }
