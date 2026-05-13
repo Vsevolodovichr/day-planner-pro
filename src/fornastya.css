@@ -83,7 +83,7 @@
   --card-dark: #0A0A0C;
   --date-panel: rgba(255,255,255,0.03);
   --date-panel-active: var(--gold-shine);
-  --border-soft: hsla(0 0% 19.4% / 0.39);
+  --border-soft: hsla(0 0% 20% / 0.4);
   --text-main: #F4F5F7;
   --text-muted: rgba(244,245,247,0.62);
   --text-dim: rgba(244,245,247,0.42);
@@ -139,7 +139,7 @@ input:focus, textarea:focus { outline: none; }
   --app-shell-bg-width: 100vw;
   --app-shell-bg-height: 100dvh;
   background:
-    linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.58) 100%),
+    linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.12) 100%),
     var(--bg-image) center / cover no-repeat,
     var(--bg-app);
   background-attachment: fixed, fixed, fixed;
@@ -162,7 +162,7 @@ input:focus, textarea:focus { outline: none; }
 
 .fornastya-phone::before {
   background:
-    linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.58) 100%),
+    linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.12) 100%),
     var(--bg-image) center / cover no-repeat,
     var(--bg-app);
 }

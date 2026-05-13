@@ -17,7 +17,7 @@ export function AppShell({
   return (
     <div className="app-shell-root min-h-full w-full flex justify-center bg-transparent">
       <div
-        className={`fornastya-phone app-shell-frame relative w-full min-h-[100dvh] flex flex-col ${
+        className={`fornastya-phone app-shell-frame relative w-full min-h-dvh flex flex-col ${
           showToolbar ? 'has-toolbar' : 'no-toolbar'
         }`}
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
