@@ -2,14 +2,15 @@ import { Task } from "../types";
 import { fromISO, UA_DAYS_SHORT, UA_MONTHS } from "../lib/date";
 import { CircularPlusButton } from "./CircularPlusButton";
 import { ProgressBar } from "./ProgressBar";
-import { TaskRow } from "./TaskRow";
+import { SortableTaskList } from "./SortableTaskList";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-export function DayCard({ iso, tasks, isToday, onToggle, onSelect, onMenu }: {
+export function DayCard({ iso, tasks, isToday, onToggle, onSelect, onMenu, onReorder }: {
   iso: string; tasks: Task[]; isToday: boolean;
   onToggle: (id: string) => void; onSelect: (id: string) => void; onMenu: (id: string) => void;
+  onReorder: (orderedIds: string[]) => void;
 }) {
   const navigate = useNavigate();
   const d = fromISO(iso);
@@ -57,7 +58,7 @@ export function DayCard({ iso, tasks, isToday, onToggle, onSelect, onMenu }: {
         </div>
         {tasks.length > 0 && expanded && (
           <div className="border-t" style={{ borderColor: "var(--border-soft)" }}>
-            {tasks.map(t => <TaskRow key={t.id} task={t} onToggle={() => onToggle(t.id)} onSelect={() => onSelect(t.id)} onMenu={() => onMenu(t.id)} />)}
+            <SortableTaskList tasks={tasks} onOrderChange={onReorder} onToggle={onToggle} onSelect={onSelect} onMenu={onMenu} />
           </div>
         )}
       </div>

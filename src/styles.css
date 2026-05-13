@@ -23,6 +23,7 @@
 }
 
 :root {
+  --pwa-bg-image: url("/111.png");
   --app-bg: #111315;
   --top-bar: #202020;
   --card: #24262B;
@@ -43,7 +44,11 @@
 }
 
 html, body, #root {
-  background: #050607;
+  background-color: #050607;
+  background-image: var(--pwa-bg-image);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
   color: var(--text-main);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;

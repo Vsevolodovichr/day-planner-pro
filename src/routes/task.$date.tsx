@@ -1,11 +1,13 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronLeft, Check, ChevronDown, MessageSquare } from "lucide-react";
 import { AppShell } from "../components/AppShell";
 import { IOSSwitch } from "../components/IOSSwitch";
+import { SortableTaskList } from "../components/SortableTaskList";
 import { useTasks } from "../components/Hooks";
 import { uid } from "../lib/storage";
 import { formatLong } from "../lib/date";
+import { applyTaskOrder, nextPlannerOrder, sortTasksForPlanner } from "../lib/task-order";
 
 export const Route = createFileRoute("/task/$date")({ component: TaskEditor });
 
@@ -17,12 +19,15 @@ function TaskEditor() {
   const [hasTime, setHasTime] = useState(false);
   const [repeat, setRepeat] = useState(false);
   const [autoMove, setAutoMove] = useState(false);
+  const dayTasks = useMemo(() => sortTasksForPlanner(tasks.filter((task) => task.date === date)), [date, tasks]);
 
   const submit = () => {
     if (!title.trim()) return navigate({ to: "/" });
-    save([...tasks, { id: uid(), title: title.trim(), date, completed: false, subtasks: [], createdAt: new Date().toISOString() }]);
+    save([...tasks, { id: uid(), title: title.trim(), date, completed: false, subtasks: [], createdAt: new Date().toISOString(), plannerOrder: nextPlannerOrder(tasks, date) }]);
     navigate({ to: "/" });
   };
+  const toggle = (id: string) => save(tasks.map((task) => task.id === id ? { ...task, completed: !task.completed } : task));
+  const reorder = (orderedIds: string[]) => save(applyTaskOrder(tasks, orderedIds));
 
   return (
     <AppShell showToolbar={false}>
@@ -43,6 +48,11 @@ function TaskEditor() {
         <Row label="Автоперенесення завдань" right={
           <IOSSwitch checked={autoMove} onChange={setAutoMove} />
         } />
+        {dayTasks.length > 0 ? (
+          <div className="rounded-2xl overflow-hidden" style={{ background: "var(--card-soft)" }}>
+            <SortableTaskList tasks={dayTasks} onOrderChange={reorder} onToggle={toggle} onSelect={() => undefined} />
+          </div>
+        ) : null}
       </div>
     </AppShell>
   );

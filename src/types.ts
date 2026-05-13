@@ -11,6 +11,7 @@ export type Task = {
   contact?: string;
   photos?: string[];
   createdAt: string;
+  plannerOrder?: number;
   folderId?: string;
 };
 export type Note = { id: string; title: string; text: string; createdAt: string; updatedAt: string; };

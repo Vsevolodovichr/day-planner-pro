@@ -7,6 +7,7 @@ import { ContextActionSheet } from "../components/ContextActionSheet";
 import { useTasks } from "../components/Hooks";
 import { getWeekDates, toISO } from "../lib/date";
 import { uid } from "../lib/storage";
+import { applyTaskOrder, sortTasksForPlanner } from "../lib/task-order";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Мої Завдання — Список справ" }, { name: "description", content: "Простий планер задач у стилі iOS." }] }),
@@ -24,6 +25,7 @@ function Home() {
 
   const toggle = (id: string) => save(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
   const select = (id: string) => setSelection(s => s.includes(id) ? s.filter(x=>x!==id) : [...s, id]);
+  const reorder = (orderedIds: string[]) => save(applyTaskOrder(tasks, orderedIds));
 
   const action = (k: string) => {
     if (k === "delete") { save(tasks.filter(t => !selection.includes(t.id))); setSelection([]); }
@@ -40,8 +42,8 @@ function Home() {
       <div className="pt-3 pb-32">
         {week.map(iso => (
           <DayCard key={iso} iso={iso} isToday={iso === selectedDate}
-            tasks={tasks.filter(t => t.date === iso)}
-            onToggle={toggle} onSelect={select} onMenu={(id)=>setMenuFor(id)} />
+            tasks={sortTasksForPlanner(tasks.filter(t => t.date === iso))}
+            onToggle={toggle} onSelect={select} onMenu={(id)=>setMenuFor(id)} onReorder={reorder} />
         ))}
       </div>
       {selection.length > 0 && <BottomActionBar onAction={action} />}
