@@ -35,7 +35,7 @@ function LoginPage() {
       <div className="flex min-h-[100dvh] items-center justify-center px-5 py-8">
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-sm rounded-[28px] border border-white/10 bg-cardSoft/95 p-6 ios-shadow"
+          className="w-full max-w-sm rounded-[28px] border border-white/10 bg-cardSoft/95 p-6"
         >
           <div className="mb-7">
             <p className="text-sm text-textMuted">Angels CRM</p>

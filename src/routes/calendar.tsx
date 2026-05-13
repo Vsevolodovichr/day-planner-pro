@@ -1,182 +1,333 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
-import { UA_DAYS_FULL, UA_MONTHS, UA_MONTHS_NOM, UA_WEEKDAY_HEADER, toISO } from '../lib/date';
+import {
+  UA_DAYS_FULL,
+  UA_MONTHS,
+  UA_MONTHS_NOM,
+  UA_WEEKDAY_HEADER,
+  toISO,
+} from '../lib/date';
 import { useTasks } from '../components/Hooks';
 import { TaskRow } from '../components/TaskRow';
+import { taskOccursOnDate, tasksForDate, toggleTaskCompletion } from '../lib/task-utils';
 
 export const Route = createFileRoute('/calendar')({ component: CalendarScreen });
+
+const navBtn: React.CSSProperties = {
+  width: 38,
+  height: 38,
+  borderRadius: '50%',
+  background: 'var(--accent-08)',
+  border: '1px solid var(--accent-25)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  color: 'var(--gold-text-strong)',
+  padding: 0,
+};
 
 function CalendarScreen() {
   const navigate = useNavigate();
   const { tasks, save } = useTasks();
   const [view, setView] = useState(new Date());
   const [selected, setSelected] = useState(new Date());
-  const statsByDate = useMemo(() => {
-    const map = new Map<string, { total: number; completed: number }>();
-    tasks.forEach((task) => {
-      if (!task.date) return;
-      const current = map.get(task.date) ?? { total: 0, completed: 0 };
-      current.total += 1;
-      if (task.completed) current.completed += 1;
-      map.set(task.date, current);
-    });
-    return map;
-  }, [tasks]);
+
   const year = view.getFullYear();
   const month = view.getMonth();
   const first = new Date(year, month, 1);
-  const startCol = (first.getDay() + 6) % 7; // monday=0
+  const startCol = (first.getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const selectedISO = toISO(selected);
-  const selectedTasks = tasks.filter((task) => task.date === selectedISO);
-  const selectedCompleted = selectedTasks.filter((task) => task.completed).length;
+
+  const statsByDate = useMemo(() => {
+    const map = new Map<string, { total: number; completed: number }>();
+    tasks.forEach((t) => {
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const iso = toISO(new Date(year, month, day));
+        if (!taskOccursOnDate(t, iso)) continue;
+        const cur = map.get(iso) ?? { total: 0, completed: 0 };
+        cur.total += 1;
+        if (t.completed) cur.completed += 1;
+        map.set(iso, cur);
+      }
+    });
+    return map;
+  }, [daysInMonth, month, tasks, year]);
+
   const cells: (number | null)[] = [];
   for (let i = 0; i < startCol; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   while (cells.length % 7 !== 0) cells.push(null);
 
+  const selectedISO = toISO(selected);
+  const todayISO = toISO(new Date());
+  const selectedTasks = tasksForDate(tasks, selectedISO);
+  const selectedCompleted = selectedTasks.filter((t) => t.completed).length;
+  const totalTasksInMonth = Array.from(statsByDate.entries()).reduce((acc, [iso, s]) => {
+    if (iso.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`)) return acc + s.total;
+    return acc;
+  }, 0);
+
+  const shiftMonth = (delta: number) => setView(new Date(year, month + delta, 1));
+
+  const toggle = (id: string) =>
+    save(tasks.map((t) => (t.id === id ? toggleTaskCompletion(t) : t)));
+
   return (
     <AppShell>
-      <div className="px-4.5 pt-4 pb-28 space-y-5">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[22px]">
-            {UA_DAYS_FULL[selected.getDay()]}, {selected.getDate()}
-          </span>
-          <button className="flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
-            <span className="text-[21px]">Дата</span>
-            <ChevronDown size={18} />
-          </button>
+      {/* Header */}
+      <div style={{ padding: '24px 18px 10px' }}>
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 500,
+            letterSpacing: 1.2,
+            textTransform: 'uppercase',
+            color: 'var(--txt-dim)',
+          }}
+        >
+          Календар
         </div>
         <div
-          className="flex items-center justify-between rounded-[18px] px-4 h-13.5"
-          style={{ background: 'var(--card-soft)' }}
+          style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            marginTop: 4,
+          }}
         >
-          <button
-            onClick={() => setView(new Date(year, month - 1, 1))}
-            className="w-12 h-12 flex items-center justify-center"
-          >
-            <ChevronLeft size={28} color="var(--accent)" />
-          </button>
-          <span className="text-[24px]" style={{ color: 'var(--accent)' }}>
-            {UA_MONTHS_NOM[month]}, {year}
-          </span>
-          <button
-            onClick={() => setView(new Date(year, month + 1, 1))}
-            className="w-12 h-12 flex items-center justify-center"
-          >
-            <ChevronRight size={28} color="var(--accent)" />
-          </button>
+          <div style={{ minWidth: 0 }}>
+            <div
+              className="gold-text"
+              style={{
+                fontSize: 30,
+                fontWeight: 700,
+                letterSpacing: -0.8,
+                lineHeight: 1.05,
+              }}
+            >
+              {UA_MONTHS_NOM[month]}
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--txt-muted)', marginTop: 2 }}>
+              {year} · {totalTasksInMonth} завдань
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => shiftMonth(-1)} style={navBtn} aria-label="Попередній місяць">
+              <ChevronLeft size={20} />
+            </button>
+            <button onClick={() => shiftMonth(1)} style={navBtn} aria-label="Наступний місяць">
+              <ChevronRight size={20} />
+            </button>
+          </div>
         </div>
-        <div className="rounded-[20px] overflow-hidden" style={{ background: 'var(--card-soft)' }}>
+      </div>
+
+      {/* Month grid */}
+      <div style={{ padding: '0 12px' }}>
+        <div className="glass" style={{ borderRadius: 22, padding: '12px 10px 14px' }}>
           <div
-            className="grid grid-cols-7 h-13.5 items-center"
-            style={{ background: 'var(--top-bar)' }}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(7, 1fr)',
+              marginBottom: 6,
+            }}
           >
-            {UA_WEEKDAY_HEADER.map((d, i) => (
+            {UA_WEEKDAY_HEADER.map((wd, i) => (
               <div
-                key={d}
-                className="text-center text-[15px]"
+                key={wd}
                 style={{
-                  color:
-                    i === 6
-                      ? 'var(--accent)'
-                      : i === 5
-                        ? 'var(--text-dim)'
-                        : i === 0
-                          ? 'var(--accent)'
-                          : 'var(--text-main)',
+                  textAlign: 'center',
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  letterSpacing: 1,
+                  color: i >= 5 ? 'var(--gold-text)' : 'var(--txt-dim)',
                 }}
               >
-                {d}
+                {wd}
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-y-4 px-1 py-8">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
             {cells.map((d, i) => {
-              if (d === null) return <div key={i} />;
-              const isSel = selected.getDate() === d && selected.getMonth() === month;
-              const dow = new Date(year, month, d).getDay();
-              const isSun = dow === 0;
-              const isSat = dow === 6;
-              const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-              const stats = statsByDate.get(iso);
+              if (d === null) return <div key={i} style={{ height: 42 }} />;
+              const dt = new Date(year, month, d);
+              const iso = toISO(dt);
+              const dow = (dt.getDay() + 6) % 7;
+              const isToday = iso === todayISO;
+              const isSel = iso === selectedISO;
+              const s = statsByDate.get(iso);
+              const isComplete = s && s.completed === s.total && s.total > 0;
               return (
                 <button
                   key={i}
-                  onClick={() => setSelected(new Date(year, month, d))}
+                  onClick={() => setSelected(dt)}
                   onDoubleClick={() => navigate({ to: '/task/$date', params: { date: iso } })}
-                  className="h-13.5 flex flex-col items-center justify-center"
+                  style={{
+                    position: 'relative',
+                    height: 42,
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 0,
+                  }}
                 >
+                  {isSel && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        inset: 3,
+                        borderRadius: '50%',
+                        background: 'var(--gold-grad)',
+                      }}
+                    />
+                  )}
+                  {isToday && !isSel && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        inset: 3,
+                        borderRadius: '50%',
+                        border: '1.5px solid var(--accent-65)',
+                      }}
+                    />
+                  )}
                   <span
-                    className={`relative flex items-center justify-center text-[20px] ${isSel ? 'rounded-full' : ''}`}
                     style={{
-                      width: 58,
-                      height: 58,
-                      border: isSel ? '1.5px solid var(--accent)' : 'none',
+                      position: 'relative',
+                      fontSize: 15,
+                      fontWeight: isSel ? 700 : 500,
+                      letterSpacing: -0.3,
                       color: isSel
-                        ? 'var(--accent)'
-                        : isSun
-                          ? 'var(--accent)'
-                          : isSat
-                            ? 'var(--text-dim)'
-                            : 'var(--text-main)',
+                        ? '#1A1308'
+                        : isToday
+                          ? 'var(--gold-text-strong)'
+                          : dow >= 5
+                            ? 'var(--txt-muted)'
+                            : 'var(--txt-main)',
+                      fontVariantNumeric: 'tabular-nums',
                     }}
                   >
                     {d}
-                    {stats && (
-                      <span
-                        className="absolute top-1 right-2 text-[13px]"
-                        style={{ color: stats.completed === stats.total ? '#FFE800' : '#D61313' }}
-                      >
-                        {stats.total}
-                      </span>
-                    )}
                   </span>
+                  {s && (
+                    <span
+                      style={{
+                        position: 'relative',
+                        marginTop: 2,
+                        width: 4,
+                        height: 4,
+                        borderRadius: '50%',
+                        background: isSel
+                          ? '#1A1308'
+                          : isComplete
+                            ? 'var(--gold-text-strong)'
+                            : 'rgba(244,245,247,0.55)',
+                      }}
+                    />
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
-        {selectedTasks.length > 0 && (
-          <div className="-mx-4.5">
+      </div>
+
+      {/* Selected day list */}
+      <div style={{ padding: '16px 12px 0' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            padding: '0 6px 10px',
+          }}
+        >
+          <div>
             <div
-              className="flex items-center justify-between px-4.5 py-4 text-[19px]"
-              style={{ color: 'var(--accent)' }}
+              style={{
+                fontSize: 18,
+                fontWeight: 600,
+                letterSpacing: -0.3,
+                color: 'var(--txt-main)',
+              }}
             >
-              <span>
-                {selectedISO.slice(8, 10)} {UA_MONTHS[selected.getMonth()].toLowerCase()} /{' '}
-                {UA_WEEKDAY_HEADER[(selected.getDay() + 6) % 7].toLowerCase()}
-              </span>
-              <span>
-                {selectedCompleted} / {selectedTasks.length}
-              </span>
+              {selected.getDate()} {UA_MONTHS[selected.getMonth()]}
             </div>
-            <div style={{ background: 'var(--card-soft)' }}>
-              {selectedTasks.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  variant="list"
-                  onToggle={() =>
-                    save(
-                      tasks.map((item) =>
-                        item.id === task.id ? { ...item, completed: !item.completed } : item,
-                      ),
-                    )
-                  }
-                  onSelect={() =>
-                    navigate({
-                      to: '/task/$date',
-                      params: { date: selectedISO },
-                      search: { id: task.id },
-                    })
-                  }
-                  onMenu={() => {}}
-                />
-              ))}
+            <div
+              style={{
+                fontSize: 12,
+                color: 'var(--txt-dim)',
+                textTransform: 'capitalize',
+                marginTop: 1,
+              }}
+            >
+              {UA_DAYS_FULL[selected.getDay()]}
             </div>
+          </div>
+          <span
+            style={{
+              fontSize: 13,
+              color: 'var(--gold-text)',
+              fontVariantNumeric: 'tabular-nums',
+              fontWeight: 600,
+            }}
+          >
+            {selectedCompleted}/{selectedTasks.length}
+          </span>
+        </div>
+
+        {selectedTasks.length === 0 ? (
+          <div
+            className="glass"
+            style={{ borderRadius: 22, padding: '24px 16px', textAlign: 'center' }}
+          >
+            <div style={{ fontSize: 14, color: 'var(--txt-muted)' }}>Немає завдань</div>
+            <button
+              onClick={() => navigate({ to: '/task/$date', params: { date: selectedISO } })}
+              style={{
+                marginTop: 12,
+                height: 40,
+                borderRadius: 999,
+                border: '1px solid var(--accent-45)',
+                background: 'var(--accent-06)',
+                color: 'var(--gold-text-strong)',
+                fontWeight: 500,
+                fontSize: 14,
+                padding: '0 14px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                cursor: 'pointer',
+              }}
+            >
+              <Plus size={15} /> Створити
+            </button>
+          </div>
+        ) : (
+          <div className="glass" style={{ borderRadius: 22, overflow: 'hidden' }}>
+            {selectedTasks.map((t) => (
+              <TaskRow
+                key={t.id}
+                task={t}
+                variant="list"
+                onToggle={() => toggle(t.id)}
+                onSelect={() =>
+                  navigate({
+                    to: '/task/$date',
+                    params: { date: t.date || selectedISO },
+                    search: { id: t.id },
+                  })
+                }
+                onMenu={() => {}}
+              />
+            ))}
           </div>
         )}
       </div>

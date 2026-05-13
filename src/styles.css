@@ -1,6 +1,6 @@
-@import "tailwindcss" source(none);
+@import 'tailwindcss' source(none);
 @source "../src";
-@import "tw-animate-css";
+@import 'tw-animate-css';
 
 @theme inline {
   --color-appBg: var(--app-bg);
@@ -20,44 +20,8 @@
   --color-progressBg: var(--progress-bg);
   --color-warningStar: var(--warning-star);
   --color-iosBlue: var(--ios-blue);
+
+  --color-goldText: var(--gold-text);
+  --color-goldStrong: var(--gold-text-strong);
+  --color-hairline: var(--hairline);
 }
-
-:root {
-  --app-bg: #111315;
-  --top-bar: #202020;
-  --card: #24262B;
-  --card-soft: #292C31;
-  --card-dark: #18191C;
-  --date-panel: #111214;
-  --date-panel-active: #050606;
-  --border-soft: rgba(255,255,255,0.08);
-  --text-main: #F3F4F5;
-  --text-muted: #A1A3A7;
-  --text-dim: #686A6E;
-  --accent: #42FFF4;
-  --accent-strong: #16C9C2;
-  --accent-dark: #087C78;
-  --progress-bg: #626466;
-  --warning-star: #FFBE26;
-  --ios-blue: #0A84FF;
-}
-
-html, body, #root {
-  background: #050607;
-  color: var(--text-main);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  margin: 0;
-  min-height: 100vh;
-}
-
-* { box-sizing: border-box; }
-
-input, textarea, button { font-family: inherit; color: inherit; }
-input:focus, textarea:focus { outline: none; }
-
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { scrollbar-width: none; }
-
-.ios-shadow { box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(0,0,0,0.4); }
-.cyan-glow { box-shadow: 0 0 0 1px rgba(66,255,244,0.2), 0 0 24px rgba(66,255,244,0.15); }

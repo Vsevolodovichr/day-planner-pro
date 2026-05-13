@@ -1,6 +1,6 @@
 import { getApiUrl } from '@/lib/api-url';
 import { authFetch } from '@/integrations/cloudflare/client';
-import type { Folder, Note, Task } from '../types';
+import type { AppNotification, Folder, Note, Task } from '../types';
 
 const API_URL = getApiUrl();
 
@@ -46,6 +46,17 @@ type ApiNote = {
   updated_at?: string | null;
 };
 
+type ApiNotification = {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  is_read?: boolean | number | null;
+  created_at?: string | null;
+};
+
 function listPayload<T>(payload: ApiList<T>): T[] {
   return Array.isArray(payload) ? payload : (payload.data ?? []);
 }
@@ -65,6 +76,7 @@ function taskFromApi(task: ApiTask): Task {
     date: dueDate?.slice(0, 10),
     time: dueDate?.includes('T') ? dueDate.slice(11, 16) : undefined,
     completed: task.status === 'done' || Boolean(task.completed_at),
+    completedAt: task.completed_at ?? undefined,
     subtasks: [],
     repeat: (task.repeat_rule as Task['repeat']) ?? 'none',
     autoMove: Boolean(task.auto_move),
@@ -82,6 +94,19 @@ function noteFromApi(note: ApiNote): Note {
     text: note.content ?? '',
     createdAt: note.created_at ?? new Date().toISOString(),
     updatedAt: note.updated_at ?? note.created_at ?? new Date().toISOString(),
+  };
+}
+
+function notificationFromApi(notification: ApiNotification): AppNotification {
+  return {
+    id: notification.id,
+    title: notification.title,
+    message: notification.message,
+    type: notification.type,
+    entityType: notification.entity_type ?? undefined,
+    entityId: notification.entity_id ?? undefined,
+    isRead: Boolean(notification.is_read),
+    createdAt: notification.created_at ?? new Date().toISOString(),
   };
 }
 
@@ -111,6 +136,7 @@ export async function createTask(task: Task): Promise<Task> {
       title: task.title,
       description: task.note ?? null,
       status: task.completed ? 'done' : 'todo',
+      completed_at: task.completedAt ?? null,
       priority: 'medium',
       due_date: dueDatePayload(task),
       folder_id: task.folderId ?? null,
@@ -132,6 +158,7 @@ export async function updateTask(task: Task): Promise<Task> {
       title: task.title,
       description: task.note ?? null,
       status: task.completed ? 'done' : 'todo',
+      completed_at: task.completedAt ?? null,
       due_date: dueDatePayload(task),
       folder_id: task.folderId ?? null,
       repeat_rule: task.repeat ?? null,
@@ -141,7 +168,7 @@ export async function updateTask(task: Task): Promise<Task> {
     }),
   });
   await syncSubtasks(task.id, task.subtasks);
-  return { ...taskFromApi({ ...updated, ...task }), subtasks: task.subtasks };
+  return { ...taskFromApi({ ...updated, ...task }), completedAt: task.completedAt, subtasks: task.subtasks };
 }
 
 export async function deleteTask(id: string): Promise<void> {
@@ -181,6 +208,17 @@ export async function updateNote(note: Note): Promise<Note> {
 
 export async function deleteNote(id: string): Promise<void> {
   await requestJson<{ success: boolean }>(`/api/notes/${id}`, { method: 'DELETE' });
+}
+
+export async function getUnreadNotifications(): Promise<AppNotification[]> {
+  const payload = await requestJson<ApiList<ApiNotification>>('/api/notifications?limit=20');
+  return listPayload(payload)
+    .map(notificationFromApi)
+    .filter((notification) => !notification.isRead);
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  await requestJson<{ success: boolean }>(`/api/notifications/${id}/read`, { method: 'PUT' });
 }
 
 function subtaskFromApi(subtask: ApiSubtask): Task {

@@ -1,18 +1,26 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Search as SearchIcon } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
-import { useTasks, useNotes } from '../components/Hooks';
+import { useFolders, useTasks, useNotes } from '../components/Hooks';
+import { taskText } from '../lib/task-utils';
 
 export const Route = createFileRoute('/search')({ component: SearchScreen });
 
 function SearchScreen() {
   const [q, setQ] = useState('');
+  const navigate = useNavigate();
   const { tasks } = useTasks();
   const { notes } = useNotes();
+  const { folders } = useFolders();
   const ql = q.toLowerCase();
-  const t = q ? tasks.filter((x) => x.title.toLowerCase().includes(ql)) : [];
+  const t = q
+    ? tasks.filter((x) =>
+        [taskText(x), ...x.subtasks.map(taskText)].join('\n').toLowerCase().includes(ql),
+      )
+    : [];
   const n = q ? notes.filter((x) => (x.title + x.text).toLowerCase().includes(ql)) : [];
+  const f = q ? folders.filter((x) => x.name.toLowerCase().includes(ql)) : [];
 
   return (
     <AppShell>
@@ -34,24 +42,59 @@ function SearchScreen() {
         </div>
         <div className="mt-3 space-y-2">
           {t.map((x) => (
-            <div
+            <button
               key={x.id}
+              onClick={() =>
+                x.date
+                  ? navigate({ to: '/task/$date', params: { date: x.date }, search: { id: x.id } })
+                  : navigate({ to: '/general' })
+              }
               className="rounded-xl px-4 py-3"
-              style={{ background: 'var(--card-soft)' }}
+              style={{
+                width: '100%',
+                background: 'var(--card-soft)',
+                color: 'var(--txt-main)',
+                textAlign: 'left',
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'anywhere',
+              }}
             >
-              {x.title}
-            </div>
+              {taskText(x)}
+            </button>
           ))}
           {n.map((x) => (
-            <div
+            <button
               key={x.id}
+              onClick={() => navigate({ to: '/notes/$id', params: { id: x.id } })}
               className="rounded-xl px-4 py-3"
-              style={{ background: 'var(--card-soft)' }}
+              style={{
+                width: '100%',
+                background: 'var(--card-soft)',
+                color: 'var(--txt-main)',
+                textAlign: 'left',
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'anywhere',
+              }}
             >
               {x.title || x.text.slice(0, 40)}
-            </div>
+            </button>
           ))}
-          {q && t.length === 0 && n.length === 0 && (
+          {f.map((x) => (
+            <button
+              key={x.id}
+              onClick={() => navigate({ to: '/general' })}
+              className="rounded-xl px-4 py-3"
+              style={{
+                width: '100%',
+                background: 'var(--card-soft)',
+                color: 'var(--txt-main)',
+                textAlign: 'left',
+              }}
+            >
+              {x.name}
+            </button>
+          ))}
+          {q && t.length === 0 && n.length === 0 && f.length === 0 && (
             <p className="text-center mt-20" style={{ color: 'var(--text-muted)' }}>
               Нічого не знайдено
             </p>

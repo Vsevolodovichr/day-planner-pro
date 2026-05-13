@@ -18,7 +18,6 @@ export function IOSSwitch({
           height: 27,
           left: 2,
           transform: checked ? 'translateX(20px)' : 'translateX(0)',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
         }}
       />
     </button>

@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-router';
 
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { Toaster } from '@/components/ui/sonner';
 import appCss from '../fornastya.css?url';
 
 function NotFoundComponent() {
@@ -95,6 +96,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AuthGate />
+        <Toaster />
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -1,86 +1,292 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { Bell, Palette, Clock, Music2 } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
 import { storage } from '../lib/storage';
+import { applyAccent, getGoldPresets, loadAccent, saveAccent } from '../lib/theme';
 import type { NotificationSettings } from '../types';
 
 export const Route = createFileRoute('/settings/notifications')({ component: NotifSettings });
 
 function NotifSettings() {
-  const navigate = useNavigate();
-  const [accentColor, setAccentColor] = useState('#42FFF4');
+  const [accentColor, setAccentColor] = useState<string>(loadAccent());
   const [s, setS] = useState<NotificationSettings>({
     enabled: false,
     silent: true,
     notifyBefore: '20 хвилин',
     melody: 'За замовчуванням',
   });
+
   useEffect(() => {
-    const color = localStorage.getItem('mz_accent_color') || '#42FFF4';
-    setAccentColor(color);
-    applyAccentColor(color);
+    applyAccent(accentColor);
     setS(storage.getNotif());
-  }, []);
-  const updateAccentColor = (color: string) => {
+  }, [accentColor]);
+
+  const presets = getGoldPresets();
+
+  const updateAccent = (color: string) => {
     setAccentColor(color);
-    localStorage.setItem('mz_accent_color', color);
-    applyAccentColor(color);
+    saveAccent(color);
+  };
+
+  const updateNotif = (patch: Partial<NotificationSettings>) => {
+    const next = { ...s, ...patch };
+    setS(next);
+    storage.setNotif(next);
   };
 
   return (
-    <AppShell showToolbar={false}>
-      <div
-        className="flex items-center px-4 h-14 border-b"
-        style={{ borderColor: 'var(--border-soft)' }}
-      >
-        <button
-          onClick={() => navigate({ to: '/' })}
-          className="w-10 h-10 flex items-center justify-center"
+    <AppShell>
+      {/* Hero */}
+      <div style={{ padding: '24px 18px 12px' }}>
+        <div
+          style={{
+            fontSize: 12,
+            letterSpacing: 1.2,
+            textTransform: 'uppercase',
+            color: 'var(--txt-dim)',
+            fontWeight: 500,
+          }}
         >
-          <ChevronLeft size={28} color="var(--accent)" />
-        </button>
-        <span className="flex-1 text-center text-[17px]">Налаштування</span>
-        <div className="w-10" />
+          Персоналізація
+        </div>
+        <div
+          className="gold-text"
+          style={{
+            marginTop: 4,
+            lineHeight: 1.1,
+            fontWeight: 600,
+            fontSize: 28,
+            letterSpacing: 0.5,
+          }}
+        >
+          Налаштування
+        </div>
       </div>
-      <div className="mt-2">
-        <SRow
-          label="Колір"
-          right={
+
+      <div style={{ padding: '4px 12px 12px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Accent color */}
+        <section className="glass" style={{ borderRadius: 22, padding: '14px 16px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              marginBottom: 12,
+            }}
+          >
+            <span
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 10,
+                background: 'var(--accent-10)',
+                border: '1px solid var(--accent-18)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--gold-text-strong)',
+              }}
+            >
+              <Palette size={16} />
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, color: 'var(--txt-main)', fontWeight: 500 }}>
+                Акцентний колір
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--txt-dim)' }}>
+                Застосовується до інтерфейсу
+              </div>
+            </div>
             <input
               type="color"
               value={accentColor}
-              onChange={(e) => updateAccentColor(e.target.value)}
-              className="h-10 w-14 rounded-xl border-0 bg-transparent p-0"
+              onChange={(e) => updateAccent(e.target.value)}
+              aria-label="Власний колір"
+              style={{
+                width: 40,
+                height: 32,
+                padding: 0,
+                border: '1px solid var(--glass-stroke)',
+                borderRadius: 10,
+                background: 'transparent',
+                cursor: 'pointer',
+              }}
             />
-          }
-        />
-        <SRow
-          label="Повідомити за"
-          right={
-            <span style={{ color: 'var(--accent)' }} className="text-[17px]">
-              {s.notifyBefore}
-            </span>
-          }
-        />
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: 10,
+            }}
+          >
+            {presets.map((p) => {
+              const active = p.color.toLowerCase() === accentColor.toLowerCase();
+              return (
+                <button
+                  key={p.key}
+                  onClick={() => updateAccent(p.color)}
+                  title={p.label}
+                  aria-label={p.label}
+                  style={{
+                    height: 40,
+                    borderRadius: 12,
+                    border: active
+                      ? '2px solid var(--accent-light-85)'
+                      : '1px solid var(--glass-stroke)',
+                    background: p.color,
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                />
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Notifications group */}
+        <section
+          className="glass"
+          style={{
+            borderRadius: 22,
+            padding: '4px 16px',
+          }}
+        >
+          <SRow
+            icon={<Bell size={16} color="var(--gold-text)" />}
+            label="Повідомлення"
+            sublabel={s.enabled ? 'Увімкнено' : 'Вимкнено'}
+            right={
+              <Toggle
+                checked={s.enabled}
+                onChange={(v) => updateNotif({ enabled: v })}
+              />
+            }
+          />
+          <Divider />
+          <SRow
+            icon={<Clock size={16} color="var(--gold-text)" />}
+            label="Повідомити за"
+            right={
+              <select
+                value={s.notifyBefore}
+                onChange={(e) => updateNotif({ notifyBefore: e.target.value })}
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid var(--glass-stroke)',
+                  borderRadius: 10,
+                  padding: '6px 10px',
+                  fontSize: 14,
+                  color: 'var(--gold-text-strong)',
+                  outline: 'none',
+                }}
+              >
+                {['5 хвилин', '10 хвилин', '20 хвилин', '1 година', '1 день'].map((opt) => (
+                  <option key={opt} value={opt} style={{ background: '#1A1308' }}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            }
+          />
+          <Divider />
+          <SRow
+            icon={<Music2 size={16} color="var(--gold-text)" />}
+            label="Мелодія"
+            right={
+              <span style={{ fontSize: 14, color: 'var(--gold-text-strong)', fontWeight: 500 }}>
+                {s.melody}
+              </span>
+            }
+          />
+        </section>
       </div>
     </AppShell>
   );
 }
-function applyAccentColor(color: string) {
-  document.documentElement.style.setProperty('--accent', color);
-  document.documentElement.style.setProperty('--accent-strong', color);
-  document.documentElement.style.setProperty('--accent-dark', color);
-  document.documentElement.style.setProperty('--date-panel-active', color);
+
+function Divider() {
+  return <div style={{ height: 1, background: 'var(--hairline)' }} />;
 }
-function SRow({ label, right }: { label: string; right: React.ReactNode }) {
+
+function SRow({
+  icon,
+  label,
+  sublabel,
+  right,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  sublabel?: string;
+  right: React.ReactNode;
+}) {
   return (
     <div
-      className="flex items-center justify-between px-5 h-[80px] border-b"
-      style={{ borderColor: 'var(--border-soft)' }}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '12px 0',
+        minHeight: 56,
+      }}
     >
-      <span className="text-[17px]">{label}</span>
+      <span
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 8,
+          background: 'var(--accent-10)',
+          border: '1px solid var(--accent-18)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 15, color: 'var(--txt-main)', fontWeight: 500 }}>{label}</div>
+        {sublabel && (
+          <div style={{ fontSize: 12, color: 'var(--txt-dim)', marginTop: 1 }}>{sublabel}</div>
+        )}
+      </div>
       {right}
     </div>
+  );
+}
+
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!checked)}
+      style={{
+        width: 51,
+        height: 31,
+        borderRadius: 999,
+        border: 'none',
+        padding: 0,
+        cursor: 'pointer',
+        background: checked ? 'var(--gold-grad)' : 'rgba(255,255,255,0.12)',
+        position: 'relative',
+        transition: 'background 0.2s',
+      }}
+      aria-pressed={checked}
+    >
+      <span
+        style={{
+          position: 'absolute',
+          top: 2,
+          left: checked ? 22 : 2,
+          width: 27,
+          height: 27,
+          borderRadius: '50%',
+          background: '#fff',
+          transition: 'left 0.2s',
+        }}
+      />
+    </button>
   );
 }

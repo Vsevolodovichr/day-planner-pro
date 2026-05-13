@@ -1,86 +1,171 @@
-:root {
-  --app-bg: #111416;
-  --top-bar: #202020;
-  --card: #23252a;
-  --card-soft: #292c31;
-  --card-dark: #18191c;
-  --date-panel: #171817;
-  --date-panel-active: #42fff4;
-  --border-soft: rgba(255, 255, 255, 0.1);
-  --text-main: #f3f4f5;
-  --text-muted: #a1a3a7;
-  --text-dim: #686a6e;
-  --accent: #42fff4;
-  --accent-strong: #16c9c2;
-  --accent-dark: #087c78;
-  --progress-bg: #626466;
-  --warning-star: #ffbe26;
-  --ios-blue: #0a84ff;
+@font-face {
+  font-family: 'Montserrat';
+  src: url('./assets/fonts/Montserrat-VariableFont_wght.ttf') format('truetype-variations'),
+       url('./assets/fonts/Montserrat-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
 }
 
-.fornastya-root {
-  color: var(--text-main);
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', Inter, system-ui, sans-serif;
+:root {
+  /* Gold palette (premium) */
+  --gold-1: #F8DC8A;
+  --gold-2: #E5C26A;
+  --gold-3: #C9A34A;
+  --gold-4: #7B5A1F;
+  --gold-grad: linear-gradient(135deg, #F8DC8A 0%, #E5C26A 35%, #C9A34A 65%, #7B5A1F 100%);
+  --gold-shine: linear-gradient(180deg, rgba(255,235,170,0.85) 0%, #E5C26A 30%, #C9A34A 55%, #7B5A1F 100%);
+  --gold-text: #E5C26A;
+  --gold-text-strong: #F8DC8A;
+
+  /* RGB triplets — used inline as rgba(var(--accent-rgb), 0.x).
+     applyAccent() recomputes these from the chosen accent color. */
+  --accent-rgb: 229, 194, 106;
+  --accent-rgb-light: 248, 220, 138;
+
+  /* Pre-computed rgba() of the base (gold-3) at common alphas. applyAccent
+     rewrites every one of these from the user-picked accent — they exist
+     here only as the first-paint default. */
+  --accent-04: rgba(229, 194, 106, 0.04);
+  --accent-06: rgba(229, 194, 106, 0.06);
+  --accent-08: rgba(229, 194, 106, 0.08);
+  --accent-10: rgba(229, 194, 106, 0.10);
+  --accent-12: rgba(229, 194, 106, 0.12);
+  --accent-18: rgba(229, 194, 106, 0.18);
+  --accent-20: rgba(229, 194, 106, 0.20);
+  --accent-22: rgba(229, 194, 106, 0.22);
+  --accent-25: rgba(229, 194, 106, 0.25);
+  --accent-30: rgba(229, 194, 106, 0.30);
+  --accent-32: rgba(229, 194, 106, 0.32);
+  --accent-35: rgba(229, 194, 106, 0.35);
+  --accent-40: rgba(229, 194, 106, 0.40);
+  --accent-45: rgba(229, 194, 106, 0.45);
+  --accent-50: rgba(229, 194, 106, 0.50);
+  --accent-55: rgba(229, 194, 106, 0.55);
+  --accent-60: rgba(229, 194, 106, 0.60);
+  --accent-65: rgba(229, 194, 106, 0.65);
+  --accent-70: rgba(229, 194, 106, 0.70);
+  --accent-85: rgba(229, 194, 106, 0.85);
+  --accent-light-18: rgba(248, 220, 138, 0.18);
+  --accent-light-20: rgba(248, 220, 138, 0.20);
+  --accent-light-50: rgba(248, 220, 138, 0.50);
+
+  /* Glass surface (intensity 85%) */
+  --glass-a: rgba(255,255,255,0.076);
+  --glass-b: rgba(255,255,255,0.036);
+  --glass-stroke: hsla(0 0% 20% / 0.6);
+  --glass-hilite: rgba(255,255,255,0.125);
+  --glass-blur: 50px;
+
+  /* Border-radius scale */
+  --r-xl: 30px;
+  --r-lg: 22px;
+  --r-md: 16px;
+  --r-sm: 10px;
+  --r-pill: 999px;
+
+  /* Text colors */
+  --txt-main: #F4F5F7;
+  --txt-muted: rgba(244,245,247,0.62);
+  --txt-dim: rgba(244,245,247,0.42);
+  --txt-faint: rgba(244,245,247,0.22);
+  --hairline: rgba(255,255,255,0.06);
+
+  /* App background */
+  --bg-app: radial-gradient(120% 80% at 50% 0%, #0A0A0C 0%, #000 70%);
+  --bg-image: url('/app-background.png');
+
+  /* Legacy aliases — keep old components working */
+  --app-bg: #000;
+  --top-bar: rgba(255,255,255,0.05);
+  --card: rgba(255,255,255,0.05);
+  --card-soft: rgba(255,255,255,0.05);
+  --card-dark: #0A0A0C;
+  --date-panel: rgba(255,255,255,0.03);
+  --date-panel-active: var(--gold-shine);
+  --border-soft: hsla(0 0% 19.4% / 0.39);
+  --text-main: #F4F5F7;
+  --text-muted: rgba(244,245,247,0.62);
+  --text-dim: rgba(244,245,247,0.42);
+  --accent: #E5C26A;
+  --accent-strong: #F8DC8A;
+  --accent-dark: #7B5A1F;
+  --progress-bg: rgba(255,255,255,0.10);
+  --warning-star: #F8DC8A;
+  --ios-blue: #0A84FF;
+}
+
+html,
+body,
+#root {
+  background: #000;
+  color: var(--txt-main);
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   margin: 0;
   min-height: 100%;
 }
 
-* {
-  box-sizing: border-box;
+* { box-sizing: border-box; }
+
+input, textarea, button { font-family: inherit; color: inherit; }
+input:focus, textarea:focus { outline: none; }
+
+::-webkit-scrollbar { width: 0; height: 0; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* Glass surface utility */
+.glass {
+  background: linear-gradient(180deg, var(--glass-a) 0%, var(--glass-b) 100%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--glass-stroke);
 }
 
-input,
-textarea,
-button {
-  font-family: inherit;
-  color: inherit;
-}
-input:focus,
-textarea:focus {
-  outline: none;
-}
-
-.bg-appBg {
-  background-color: var(--app-bg);
-}
-.bg-topBar {
-  background-color: var(--top-bar);
-}
-.bg-cardSoft {
-  background-color: var(--card-soft);
-}
-.border-borderSoft {
-  border-color: var(--border-soft);
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  scrollbar-width: none;
-}
-
-.ios-shadow {
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 8px 24px rgba(0, 0, 0, 0.4);
-}
-.cyan-glow {
-  box-shadow:
-    0 0 0 1px rgba(66, 255, 244, 0.2),
-    0 0 24px rgba(66, 255, 244, 0.15);
+.gold-text {
+  background: var(--gold-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 
 .fornastya-phone {
-  background: var(--app-bg);
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.58) 100%),
+    var(--bg-image) center / cover no-repeat,
+    var(--bg-app);
+  background-attachment: fixed, fixed, fixed;
+  isolation: isolate;
+  position: relative;
+}
+
+.fornastya-phone::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(rgba(var(--accent-rgb), 0.64), rgba(var(--accent-rgb), 0.64)),
+    var(--bg-image) center / cover no-repeat;
+  background-attachment: fixed, fixed;
+  background-blend-mode: multiply;
+  mix-blend-mode: screen;
+  filter: brightness(1.45) contrast(2.6);
+  opacity: 0.18;
+}
+
+.fornastya-phone > * {
+  position: relative;
+  z-index: 1;
 }
 
 @media (min-width: 640px) {
   .fornastya-phone {
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+    max-width: 430px;
+    border-radius: 36px;
   }
 }

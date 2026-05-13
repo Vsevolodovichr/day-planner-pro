@@ -1,8 +1,11 @@
-import { ListPlus, UserPlus, Copy } from 'lucide-react';
+import { ArrowRightLeft, Copy, ListPlus, Pencil, Send, Trash2 } from 'lucide-react';
 const items = [
   { Icon: ListPlus, label: 'Додати підзадачу', key: 'subtask' },
-  { Icon: UserPlus, label: 'Додати контакт', key: 'contact' },
-  { Icon: Copy, label: 'Зробити копію', key: 'copy' },
+  { Icon: ArrowRightLeft, label: 'Перенести', key: 'transfer' },
+  { Icon: Pencil, label: 'Редагувати', key: 'edit' },
+  { Icon: Copy, label: 'Копіювати', key: 'copy' },
+  { Icon: Send, label: 'Відправити', key: 'send' },
+  { Icon: Trash2, label: 'Видалити', key: 'delete' },
 ] as const;
 export function ContextActionSheet({
   onAction,
@@ -13,12 +16,12 @@ export function ContextActionSheet({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: 'rgba(0,0,0,0.68)' }}
+      className="fixed inset-0 flex items-end justify-center"
+      style={{ background: 'rgba(0,0,0,0.72)', zIndex: 70 }}
       onClick={onClose}
     >
       <div
-        className="w-full sm:w-[428px] px-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:pb-6 space-y-2.5"
+        className="w-full sm:w-[428px] px-4 pb-[calc(6.25rem+env(safe-area-inset-bottom))] space-y-2.5"
         onClick={(e) => e.stopPropagation()}
       >
         {items.map(({ Icon, label, key }) => (
@@ -29,7 +32,7 @@ export function ContextActionSheet({
               onClose();
             }}
             className="w-full flex items-center gap-4 px-5 rounded-2xl"
-            style={{ height: 62, background: 'var(--card-soft)' }}
+            style={{ height: 62, background: 'rgba(18,18,20,0.96)' }}
           >
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center"

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { ChevronLeft, Trash2 } from 'lucide-react';
+import { ChevronLeft, Trash2, Check } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
 import { useNotes } from '../components/Hooks';
 import { uid } from '../lib/storage';
@@ -14,6 +14,7 @@ function NoteEditor() {
   const existing = notes.find((n) => n.id === id);
   const [title, setTitle] = useState(existing?.title || '');
   const [text, setText] = useState(existing?.text || '');
+
   useEffect(() => {
     if (existing) {
       setTitle(existing.title);
@@ -23,78 +24,133 @@ function NoteEditor() {
 
   const persist = async () => {
     const now = new Date().toISOString();
-    if (existing)
+    if (existing) {
       await save(notes.map((n) => (n.id === id ? { ...n, title, text, updatedAt: now } : n)));
-    else if (title || text)
+    } else if (title || text) {
       await save([
         ...notes,
         { id: id === 'new' ? uid() : id, title, text, createdAt: now, updatedAt: now },
       ]);
+    }
+    navigate({ to: '/notes' });
+  };
+
+  const topBtn: React.CSSProperties = {
+    height: 38,
+    borderRadius: 999,
+    background: 'var(--accent-08)',
+    border: '1px solid var(--accent-22)',
+    padding: '0 12px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    cursor: 'pointer',
+    color: 'var(--gold-text-strong)',
   };
 
   return (
     <AppShell showToolbar={false}>
       <div
-        className="flex items-center px-4 h-14 border-b"
-        style={{ borderColor: 'var(--border-soft)' }}
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '14px',
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.85) 70%, transparent 100%)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+        }}
       >
-        <button
-          onClick={() => navigate({ to: '/notes' })}
-          className="w-10 h-10 flex items-center justify-center"
-        >
-          <ChevronLeft size={28} color="var(--accent)" />
+        <button onClick={() => navigate({ to: '/notes' })} style={topBtn} aria-label="Назад">
+          <ChevronLeft size={20} />
+          <span className="gold-text" style={{ fontSize: 14, fontWeight: 500 }}>
+            Назад
+          </span>
         </button>
-        <span className="flex-1 text-center text-[17px]">Нотатки</span>
+
+        <span style={{ fontSize: 14, color: 'var(--txt-muted)' }}>
+          {existing ? 'Редагування' : 'Нова нотатка'}
+        </span>
+
         {existing ? (
           <button
             onClick={() => {
-              save(notes.filter((n) => n.id !== id));
-              navigate({ to: '/notes' });
+              if (window.confirm('Видалити нотатку?')) {
+                save(notes.filter((n) => n.id !== id));
+                navigate({ to: '/notes' });
+              }
             }}
-            className="w-10 h-10 flex items-center justify-center"
+            style={{
+              ...topBtn,
+              background: 'rgba(255,90,90,0.10)',
+              border: '1px solid rgba(255,90,90,0.25)',
+              color: '#FF8B8B',
+            }}
+            aria-label="Видалити"
           >
-            <Trash2 size={22} color="#FF6961" strokeWidth={1.6} />
+            <Trash2 size={16} />
           </button>
         ) : (
           <button
-            onClick={() => {
-              void persist().then(() => navigate({ to: '/notes' }));
-            }}
+            onClick={() => void persist()}
             disabled={!title.trim() && !text.trim()}
-            className="h-10 px-3 text-[16px] disabled:opacity-40"
-            style={{ color: 'var(--accent)' }}
+            style={{
+              ...topBtn,
+              background: 'var(--gold-shine)',
+              border: '1px solid var(--accent-light-50)',
+              color: '#1A1308',
+              opacity: !title.trim() && !text.trim() ? 0.5 : 1,
+            }}
           >
-            Створити
+            <Check size={18} strokeWidth={2.2} color="#1A1308" />
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#1A1308' }}>Створити</span>
           </button>
         )}
       </div>
-      <div className="px-4 pt-5 space-y-4">
-        <div
-          className="rounded-2xl flex items-center gap-3 px-4 h-16"
-          style={{ background: 'var(--card-soft)' }}
-        >
-          <div
-            className="w-[22px] h-[22px] rounded-md border"
-            style={{ borderColor: 'var(--text-dim)' }}
-          />
+
+      <div
+        style={{ padding: '4px 14px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}
+      >
+        <div className="glass" style={{ borderRadius: 22, padding: '12px 14px' }}>
           <input
+            autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            onBlur={() => existing && void persist()}
             placeholder="Назва"
-            className="flex-1 bg-transparent text-[18px] border-b"
-            style={{ borderColor: 'var(--border-soft)' }}
+            style={{
+              width: '100%',
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              fontSize: 18,
+              fontWeight: 500,
+              color: 'var(--txt-main)',
+            }}
           />
         </div>
-        <div
-          className="rounded-2xl px-4 py-4"
-          style={{ background: 'var(--card-soft)', minHeight: 380 }}
-        >
+        <div className="glass" style={{ borderRadius: 22, padding: '14px 16px', flex: 1 }}>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Текст"
-            className="w-full bg-transparent text-[17px] resize-none"
-            style={{ minHeight: 360 }}
+            onBlur={() => existing && void persist()}
+            placeholder="Текст…"
+            rows={16}
+            style={{
+              width: '100%',
+              minHeight: 320,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              fontSize: 15,
+              lineHeight: 1.55,
+              color: 'var(--txt-main)',
+              resize: 'none',
+              fontFamily: 'inherit',
+            }}
           />
         </div>
       </div>

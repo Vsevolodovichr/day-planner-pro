@@ -14,6 +14,7 @@ export function BottomActionBar({ onAction }: { onAction: (k: string) => void })
         height: 104,
         paddingBottom: 'env(safe-area-inset-bottom)',
         border: '1px solid var(--border-soft)',
+        zIndex: 45,
       }}
     >
       {items.map(({ Icon, label, key }) => (

@@ -1,17 +1,19 @@
 import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { ChevronLeft, Check, ChevronDown, MessageSquare } from 'lucide-react';
+import { ChevronLeft, Check, ChevronDown, Clock, Repeat2, Sparkles, Palette } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
 import { IOSSwitch } from '../components/IOSSwitch';
 import { useTasks } from '../components/Hooks';
 import { uid } from '../lib/storage';
 import { formatLong } from '../lib/date';
+import { taskText } from '../lib/task-utils';
 
 const repeatOptions = [
   { value: 'daily', label: 'Кожен день' },
   { value: 'weekdays', label: 'Кожен день Пн-Пт' },
   { value: 'weekly', label: 'Щотижня' },
   { value: 'monthly', label: 'Кожен місяць' },
+  { value: 'yearly', label: 'Щороку' },
   { value: 'flexible', label: 'Гнучкий графік' },
 ] as const;
 
@@ -23,8 +25,11 @@ const repeatLabels: Record<RepeatValue, string> = {
   weekdays: 'Кожен день Пн-Пт',
   weekly: 'Щотижня',
   monthly: 'Кожен місяць',
+  yearly: 'Щороку',
   flexible: 'Гнучкий графік',
 };
+
+const colorPresets = ['#F8DC8A', '#F2B5A6', '#8DC4DD', '#B8DBA0', '#C7B8E8', '#5A5A60'];
 
 export const Route = createFileRoute('/task/$date')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -39,10 +44,9 @@ function TaskEditor() {
   const navigate = useNavigate();
   const { tasks, save } = useTasks();
   const existing = tasks.find((task) => task.id === id);
-  const [title, setTitle] = useState(existing?.title ?? '');
-  const [note, setNote] = useState(existing?.note ?? '');
+  const [title, setTitle] = useState(existing ? taskText(existing) : '');
   const [time, setTime] = useState(existing?.time ?? '');
-  const [color, setColor] = useState(existing?.color ?? '#42FFF4');
+  const [color, setColor] = useState(existing?.color ?? '#F8DC8A');
   const [hasTime, setHasTime] = useState(Boolean(existing?.time));
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [repeat, setRepeat] = useState<RepeatValue>(existing?.repeat ?? 'none');
@@ -51,13 +55,12 @@ function TaskEditor() {
 
   useEffect(() => {
     if (!existing) return;
-    setTitle(existing.title);
-    setNote(existing.note ?? '');
+    setTitle(taskText(existing));
     setTime(existing.time ?? '');
     setHasTime(Boolean(existing.time));
     setRepeat(existing.repeat ?? 'none');
     setAutoMove(Boolean(existing.autoMove));
-    setColor(existing.color ?? '#42FFF4');
+    setColor(existing.color ?? '#F8DC8A');
   }, [existing]);
 
   const toggleTime = (checked: boolean) => {
@@ -82,13 +85,15 @@ function TaskEditor() {
 
   const submit = () => {
     if (!title.trim()) return navigate({ to: '/' });
+    const [firstLine = '', ...rest] = title.trim().split(/\r?\n/);
     const next = {
       id: existing?.id ?? uid(),
-      title: title.trim(),
-      note: note.trim() || undefined,
+      title: firstLine.trim() || title.trim(),
+      note: rest.join('\n').trim() || undefined,
       date,
       time: hasTime && time ? time : undefined,
       completed: existing?.completed ?? false,
+      completedAt: existing?.completedAt,
       subtasks: existing?.subtasks ?? [],
       repeat,
       autoMove,
@@ -102,64 +107,132 @@ function TaskEditor() {
     navigate({ to: '/' });
   };
 
+  const topBtn: React.CSSProperties = {
+    height: 38,
+    borderRadius: 999,
+    background: 'var(--accent-08)',
+    border: '1px solid var(--accent-22)',
+    padding: '0 12px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    cursor: 'pointer',
+    color: 'var(--gold-text-strong)',
+  };
+
   return (
     <AppShell showToolbar={false}>
       <div
-        className="flex items-center justify-between px-4 h-14 border-b"
-        style={{ borderColor: 'var(--border-soft)' }}
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '14px',
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.85) 70%, transparent 100%)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+        }}
       >
+        <button onClick={() => navigate({ to: '/' })} style={topBtn} aria-label="Назад">
+          <ChevronLeft size={20} />
+          <span className="gold-text" style={{ fontSize: 14, fontWeight: 500 }}>
+            Назад
+          </span>
+        </button>
         <button
-          onClick={() => navigate({ to: '/' })}
-          className="w-10 h-10 flex items-center justify-center"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--txt-main)',
+            cursor: 'pointer',
+            fontSize: 14,
+          }}
         >
-          <ChevronLeft size={28} color="var(--accent)" />
+          <span>{formatLong(date)}</span>
+          <ChevronDown size={15} color="var(--txt-muted)" />
         </button>
-        <button className="flex items-center gap-1.5">
-          <span className="text-[17px]">{formatLong(date)}</span>
-          <ChevronDown size={16} color="var(--text-muted)" />
-        </button>
-        <button onClick={submit} className="w-10 h-10 flex items-center justify-center">
-          <Check size={26} color="var(--accent)" strokeWidth={2} />
+        <button
+          onClick={submit}
+          style={{
+            ...topBtn,
+            background: 'var(--gold-shine)',
+            border: '1px solid var(--accent-light-50)',
+            color: '#1A1308',
+          }}
+          aria-label="Готово"
+        >
+          <Check size={18} strokeWidth={2.2} color="#1A1308" />
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#1A1308' }}>Готово</span>
         </button>
       </div>
-      <div className="px-4 pt-5 space-y-4">
+
+      <div style={{ padding: '4px 14px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Title input */}
         <div
-          className="rounded-2xl flex items-center gap-3 px-4 h-16"
-          style={{ background: 'var(--card-soft)' }}
+          className="glass"
+          style={{
+            borderRadius: 22,
+            padding: '12px 14px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 12,
+          }}
         >
-          <div
-            className="w-[22px] h-[22px] rounded-full border"
-            style={{ borderColor: 'var(--text-dim)' }}
+          <span
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              border: '1.5px solid rgba(255,255,255,0.35)',
+              flexShrink: 0,
+              marginTop: 4,
+            }}
           />
-          <input
+          <textarea
             autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Завдання"
-            className="flex-1 bg-transparent text-[18px] border-b"
-            style={{ borderColor: 'var(--border-soft)', color: 'var(--text-main)' }}
+            rows={6}
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              fontSize: 17,
+              color: 'var(--txt-main)',
+              resize: 'none',
+              fontFamily: 'inherit',
+              lineHeight: 1.5,
+            }}
           />
-          <MessageSquare size={22} color="var(--accent)" />
         </div>
-        <div className="rounded-2xl px-4 py-4" style={{ background: 'var(--card-soft)' }}>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Коментар"
-            className="w-full bg-transparent text-[17px] resize-none"
-            style={{ minHeight: 96, color: 'var(--text-main)' }}
-          />
-        </div>
+
+        {/* Time row */}
         <Row
+          icon={<Clock size={16} color="var(--gold-text)" />}
           label="Вказати час"
           right={
-            <div className="flex items-center gap-3">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               {hasTime && (
                 <button
                   type="button"
                   onClick={() => setShowTimePicker(true)}
-                  className="text-[16px]"
-                  style={{ color: 'var(--accent)' }}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: 15,
+                    cursor: 'pointer',
+                    color: 'var(--gold-text-strong)',
+                    fontWeight: 600,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
                 >
                   {time}
                 </button>
@@ -168,16 +241,28 @@ function TaskEditor() {
             </div>
           }
         />
+
+        {/* Repeat row */}
         <Row
+          icon={<Repeat2 size={16} color="var(--gold-text)" />}
           label="Повтор завдання"
           right={
-            <div className="flex items-center gap-3">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               {repeat !== 'none' && (
                 <button
                   type="button"
                   onClick={() => setShowRepeatPicker(true)}
-                  className="max-w-[132px] truncate text-right text-[15px]"
-                  style={{ color: 'var(--accent)' }}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--gold-text-strong)',
+                    fontSize: 14,
+                    maxWidth: 140,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    cursor: 'pointer',
+                  }}
                 >
                   {repeatLabels[repeat]}
                 </button>
@@ -186,58 +271,192 @@ function TaskEditor() {
             </div>
           }
         />
-        {showTimePicker && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 px-4 pb-6">
-            <div
-              className="w-full max-w-sm rounded-3xl p-4"
-              style={{ background: 'var(--card-soft)' }}
-            >
-              <div className="mb-4 text-center text-[18px]">Виберіть час</div>
-              <input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="mb-4 h-12 w-full rounded-2xl bg-transparent px-4 text-center text-[24px]"
-                style={{ color: 'var(--accent)', border: '1px solid var(--border-soft)' }}
+
+        {/* Auto-move */}
+        <Row
+          icon={<Sparkles size={16} color="var(--gold-text)" />}
+          label="Автоперенесення"
+          sublabel="Невиконані → на завтра"
+          right={<IOSSwitch checked={autoMove} onChange={setAutoMove} />}
+        />
+
+        {/* Color picker */}
+        <div className="glass" style={{ borderRadius: 22, padding: '14px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <Palette size={16} color="var(--gold-text)" />
+            <span style={{ fontSize: 15, color: 'var(--txt-main)', fontWeight: 500 }}>Колір</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+            {colorPresets.map((c) => (
+              <button
+                key={c}
+                onClick={() => setColor(c)}
+                aria-label={c}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: c,
+                  padding: 0,
+                  cursor: 'pointer',
+                }}
               />
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHasTime(false);
-                    setTime('');
-                    setShowTimePicker(false);
-                  }}
-                  className="h-12 rounded-2xl text-[17px]"
-                  style={{ background: 'rgba(255,255,255,0.08)' }}
-                >
-                  Скасувати
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTime((current) => current || '09:00');
-                    setHasTime(true);
-                    setShowTimePicker(false);
-                  }}
-                  className="h-12 rounded-2xl text-[17px]"
-                  style={{ background: 'var(--accent)', color: '#050506' }}
-                >
-                  Готово
-                </button>
-              </div>
+            ))}
+            <input
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              style={{
+                width: 36,
+                height: 36,
+                padding: 0,
+                background: 'transparent',
+                border: '1px dashed var(--accent-40)',
+                borderRadius: 8,
+                cursor: 'pointer',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Time picker sheet */}
+      {showTimePicker && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.68)',
+            padding: '0 16px 24px',
+          }}
+        >
+          <div
+            className="glass"
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              borderRadius: 24,
+              padding: 16,
+              background: 'rgba(18,18,20,0.96)',
+            }}
+          >
+            <div
+              style={{
+                marginBottom: 14,
+                textAlign: 'center',
+                fontSize: 16,
+                color: 'var(--txt-main)',
+                fontWeight: 500,
+              }}
+            >
+              Виберіть час
+            </div>
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              style={{
+                marginBottom: 14,
+                height: 48,
+                width: '100%',
+                borderRadius: 16,
+                background: 'transparent',
+                color: 'var(--gold-text-strong)',
+                border: '1px solid var(--glass-stroke)',
+                textAlign: 'center',
+                fontSize: 22,
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setHasTime(false);
+                  setTime('');
+                  setShowTimePicker(false);
+                }}
+                style={{
+                  height: 44,
+                  borderRadius: 999,
+                  border: '1px solid var(--glass-stroke)',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: 'var(--txt-main)',
+                  fontSize: 15,
+                  cursor: 'pointer',
+                }}
+              >
+                Скасувати
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTime((current) => current || '09:00');
+                  setHasTime(true);
+                  setShowTimePicker(false);
+                }}
+                style={{
+                  height: 44,
+                  borderRadius: 999,
+                  border: '1px solid var(--accent-light-50)',
+                  background: 'var(--gold-shine)',
+                  color: '#1A1308',
+                  fontSize: 15,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Готово
+              </button>
             </div>
           </div>
-        )}
-        {showRepeatPicker && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 px-4 pb-6">
+        </div>
+      )}
+
+      {/* Repeat picker sheet */}
+      {showRepeatPicker && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.68)',
+            padding: '0 16px 24px',
+          }}
+        >
+          <div
+            className="glass"
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              borderRadius: 24,
+              padding: 14,
+              background: 'rgba(18,18,20,0.96)',
+            }}
+          >
             <div
-              className="w-full max-w-sm rounded-3xl p-3"
-              style={{ background: 'var(--card-soft)' }}
+              style={{
+                padding: '6px 4px 12px',
+                textAlign: 'center',
+                fontSize: 16,
+                color: 'var(--txt-main)',
+                fontWeight: 500,
+              }}
             >
-              <div className="px-2 pb-3 pt-1 text-center text-[18px]">Повтор завдання</div>
-              <div className="space-y-2">
-                {repeatOptions.map((option) => (
+              Повтор завдання
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {repeatOptions.map((option) => {
+                const active = repeat === option.value;
+                return (
                   <button
                     key={option.value}
                     type="button"
@@ -245,54 +464,100 @@ function TaskEditor() {
                       setRepeat(option.value);
                       setShowRepeatPicker(false);
                     }}
-                    className="flex h-12 w-full items-center justify-between rounded-2xl px-4 text-left text-[17px]"
-                    style={{ background: 'rgba(255,255,255,0.08)' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      height: 46,
+                      width: '100%',
+                      borderRadius: 14,
+                      padding: '0 14px',
+                      fontSize: 15,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      background: active
+                        ? 'linear-gradient(180deg, var(--accent-18) 0%, var(--accent-04) 100%)'
+                        : 'rgba(255,255,255,0.05)',
+                      border: active
+                        ? '1px solid var(--accent-45)'
+                        : '1px solid var(--glass-stroke)',
+                      color: active ? 'var(--gold-text-strong)' : 'var(--txt-main)',
+                    }}
                   >
                     <span>{option.label}</span>
-                    {repeat === option.value && <Check size={20} color="var(--accent)" />}
+                    {active && <Check size={18} color="var(--gold-text-strong)" />}
                   </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (repeat === 'none') setRepeat('none');
-                  setShowRepeatPicker(false);
-                }}
-                className="mt-3 h-12 w-full rounded-2xl text-[17px]"
-                style={{ color: 'var(--accent)', background: 'rgba(255,255,255,0.08)' }}
-              >
-                Скасувати
-              </button>
+                );
+              })}
             </div>
+            <button
+              type="button"
+              onClick={() => setShowRepeatPicker(false)}
+              style={{
+                marginTop: 12,
+                height: 44,
+                width: '100%',
+                borderRadius: 999,
+                border: '1px solid var(--glass-stroke)',
+                background: 'rgba(255,255,255,0.06)',
+                color: 'var(--gold-text-strong)',
+                fontSize: 15,
+                cursor: 'pointer',
+              }}
+            >
+              Скасувати
+            </button>
           </div>
-        )}
-        <Row
-          label="Автоперенесення завдань"
-          right={<IOSSwitch checked={autoMove} onChange={setAutoMove} />}
-        />
-        <Row
-          label="Колір"
-          right={
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="h-9 w-12 bg-transparent"
-            />
-          }
-        />
-      </div>
+        </div>
+      )}
     </AppShell>
   );
 }
-function Row({ label, right }: { label: string; right: React.ReactNode }) {
+
+function Row({
+  icon,
+  label,
+  sublabel,
+  right,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  sublabel?: string;
+  right: React.ReactNode;
+}) {
   return (
     <div
-      className="flex items-center justify-between rounded-2xl px-4 h-16"
-      style={{ background: 'var(--card-soft)' }}
+      className="glass"
+      style={{
+        borderRadius: 22,
+        padding: '12px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        minHeight: 60,
+      }}
     >
-      <span className="text-[17px]">{label}</span>
+      <span
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 8,
+          background: 'var(--accent-10)',
+          border: '1px solid var(--accent-18)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 15, color: 'var(--txt-main)', fontWeight: 500 }}>{label}</div>
+        {sublabel && (
+          <div style={{ fontSize: 12, color: 'var(--txt-dim)', marginTop: 1 }}>{sublabel}</div>
+        )}
+      </div>
       {right}
     </div>
   );

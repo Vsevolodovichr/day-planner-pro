@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
+import { toast } from 'sonner';
 import { cloudflareApi } from '@/integrations/cloudflare/client';
 import { UserSchema } from '@/lib/schemas';
 
@@ -14,15 +15,33 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const PWA_LOGIN_UPDATE_DELAY_MS = 25_000;
+const PWA_UPDATE_TOAST_ID = 'pwa-update-ready';
+
+type UpdateServiceWorker = (reloadPage?: boolean) => Promise<void>;
 
 function getStoredAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('access_token');
 }
 
+function showPwaUpdatePrompt(updateServiceWorker: UpdateServiceWorker) {
+  toast('Доступне оновлення', {
+    id: PWA_UPDATE_TOAST_ID,
+    description: 'Натисніть, щоб оновити застосунок.',
+    action: {
+      label: 'Оновити',
+      onClick: () => void updateServiceWorker(true),
+    },
+    duration: Infinity,
+  });
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingPwaUpdate, setPendingPwaUpdate] = useState<UpdateServiceWorker | null>(null);
+  const [delayPwaUpdateUntilLogin, setDelayPwaUpdateUntilLogin] = useState(false);
 
   const reloadUser = useCallback(async () => {
     if (!getStoredAccessToken()) {
@@ -45,6 +64,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void reloadUser();
   }, [reloadUser]);
+
+  useEffect(() => {
+    const handlePwaUpdateReady = (event: Event) => {
+      const updateServiceWorker = (event as CustomEvent<{ updateServiceWorker?: UpdateServiceWorker }>)
+        .detail?.updateServiceWorker;
+
+      if (!updateServiceWorker) return;
+      setPendingPwaUpdate(() => updateServiceWorker);
+    };
+
+    window.addEventListener('pwa:update-ready', handlePwaUpdateReady);
+    return () => window.removeEventListener('pwa:update-ready', handlePwaUpdateReady);
+  }, []);
+
+  useEffect(() => {
+    if (!pendingPwaUpdate || loading) return;
+
+    if (!user) {
+      if (!delayPwaUpdateUntilLogin) setDelayPwaUpdateUntilLogin(true);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(
+      () => {
+        showPwaUpdatePrompt(pendingPwaUpdate);
+        setPendingPwaUpdate(null);
+        setDelayPwaUpdateUntilLogin(false);
+      },
+      delayPwaUpdateUntilLogin ? PWA_LOGIN_UPDATE_DELAY_MS : 0,
+    );
+
+    return () => window.clearTimeout(timeoutId);
+  }, [delayPwaUpdateUntilLogin, loading, pendingPwaUpdate, user]);
 
   const signIn = useCallback(
     async (email: string, password: string) => {

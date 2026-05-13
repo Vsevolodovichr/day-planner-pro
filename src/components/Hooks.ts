@@ -10,11 +10,14 @@ import {
   getFolders,
   getNotes,
   getTasks,
+  getUnreadNotifications,
+  markNotificationRead,
   updateFolder,
   updateNote,
   updateTask,
 } from '../lib/api';
-import type { Folder, Task, Note } from '../types';
+import { applyAutoMove } from '../lib/task-utils';
+import type { AppNotification, Folder, Task, Note } from '../types';
 
 let sharedNotes: Note[] = [];
 const noteListeners = new Set<(notes: Note[]) => void>();
@@ -38,8 +41,14 @@ export function useTasks() {
     }
     void getTasks(user?.id).then((loaded) => {
       if (!active) return;
-      tasksRef.current = loaded;
-      setTasks(loaded);
+      const moved = applyAutoMove(loaded);
+      tasksRef.current = moved;
+      setTasks(moved);
+      moved
+        .filter((task) => loaded.find((item) => item.id === task.id)?.date !== task.date)
+        .forEach((task) => {
+          void updateTask(task);
+        });
     });
     return () => {
       active = false;
@@ -199,4 +208,31 @@ export function useFolders() {
   }, []);
 
   return { folders, save };
+}
+
+export function useUnreadNotifications() {
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+
+  const refresh = useCallback(async () => {
+    if (!user?.id) {
+      setNotifications([]);
+      return;
+    }
+    const loaded = await getUnreadNotifications().catch(() => []);
+    setNotifications(loaded);
+  }, [user?.id]);
+
+  useEffect(() => {
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 30000);
+    return () => window.clearInterval(timer);
+  }, [refresh]);
+
+  const markRead = useCallback((id: string) => {
+    setNotifications((current) => current.filter((notification) => notification.id !== id));
+    void markNotificationRead(id);
+  }, []);
+
+  return { notifications, refresh, markRead };
 }
