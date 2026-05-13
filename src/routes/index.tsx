@@ -174,10 +174,19 @@ function SubtaskModal({
         </span>
         <textarea
           autoFocus
+          ref={(node) => {
+            if (!node) return;
+            node.style.height = 'auto';
+            node.style.height = `${node.scrollHeight}px`;
+          }}
           value={value}
-          onChange={(event) => setValue(event.target.value)}
+          onChange={(event) => {
+            setValue(event.target.value);
+            event.currentTarget.style.height = 'auto';
+            event.currentTarget.style.height = `${event.currentTarget.scrollHeight}px`;
+          }}
           placeholder="Підзадача"
-          rows={4}
+          rows={1}
           style={{
             background: 'rgba(255,255,255,0.05)',
             border: '1px solid var(--glass-stroke)',
@@ -189,6 +198,9 @@ function SubtaskModal({
             resize: 'none',
             fontFamily: 'inherit',
             lineHeight: 1.5,
+            minHeight: 108,
+            maxHeight: 'min(52dvh, 420px)',
+            overflowY: 'auto',
           }}
         />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

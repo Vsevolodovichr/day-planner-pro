@@ -3,6 +3,7 @@ import { useState } from 'react';
 import {
   Check,
   Folder as FolderIcon,
+  Pencil,
   Plus,
   Trash2,
   X,
@@ -88,10 +89,19 @@ function EditModal({
 
         <textarea
           autoFocus
+          ref={(node) => {
+            if (!node) return;
+            node.style.height = 'auto';
+            node.style.height = `${node.scrollHeight}px`;
+          }}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            e.currentTarget.style.height = 'auto';
+            e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+          }}
           placeholder="Завдання"
-          rows={5}
+          rows={1}
           style={{
             background: 'rgba(255,255,255,0.05)',
             border: '1px solid var(--glass-stroke)',
@@ -103,6 +113,9 @@ function EditModal({
             resize: 'none',
             fontFamily: 'inherit',
             lineHeight: 1.5,
+            minHeight: 124,
+            maxHeight: 'min(52dvh, 420px)',
+            overflowY: 'auto',
           }}
         />
 
@@ -156,11 +169,17 @@ function EditModal({
 function SubtaskModal({
   onClose,
   onSave,
+  heading = 'Нова підзадача',
+  placeholder = 'Підзадача',
+  initialValue = '',
 }: {
   onClose: () => void;
   onSave: (title: string) => void;
+  heading?: string;
+  placeholder?: string;
+  initialValue?: string;
 }) {
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(initialValue);
 
   return (
     <div
@@ -191,14 +210,23 @@ function SubtaskModal({
         }}
       >
         <span className="gold-text" style={{ fontSize: 18, fontWeight: 600 }}>
-          Нова підзадача
+          {heading}
         </span>
         <textarea
           autoFocus
+          ref={(node) => {
+            if (!node) return;
+            node.style.height = 'auto';
+            node.style.height = `${node.scrollHeight}px`;
+          }}
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Підзадача"
-          rows={4}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            e.currentTarget.style.height = 'auto';
+            e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+          }}
+          placeholder={placeholder}
+          rows={1}
           style={{
             background: 'rgba(255,255,255,0.05)',
             border: '1px solid var(--glass-stroke)',
@@ -210,6 +238,9 @@ function SubtaskModal({
             resize: 'none',
             fontFamily: 'inherit',
             lineHeight: 1.5,
+            minHeight: 108,
+            maxHeight: 'min(52dvh, 420px)',
+            overflowY: 'auto',
           }}
         />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -253,15 +284,16 @@ function SubtaskModal({
 function TaskCard({
   task,
   onToggle,
-  onEdit,
+  onSelect,
   onMenu,
   onToggleSub,
   onSubEdit,
   onSubDelete,
+  selected,
 }: {
   task: Task;
   onToggle: () => void;
-  onEdit: () => void;
+  onSelect: () => void;
   onDelete: () => void;
   onAddSubtask: () => void;
   onToggleSub: (id: string) => void;
@@ -269,6 +301,7 @@ function TaskCard({
   onSubEdit: (id: string) => void;
   onSubCopy: (id: string) => void;
   onSubDelete: (id: string) => void;
+  selected: boolean;
 }) {
   return (
     <section
@@ -282,12 +315,14 @@ function TaskCard({
       <TaskRow
         task={task}
         variant="list"
+        selected={selected}
         onToggle={onToggle}
-        onSelect={onEdit}
+        onSelect={onSelect}
         onMenu={onMenu}
         onToggleSubtask={onToggleSub}
         onEditSubtask={onSubEdit}
         onDeleteSubtask={onSubDelete}
+        subtaskTogglePlacement="bottom-right"
       />
     </section>
   );
@@ -301,36 +336,65 @@ function General() {
   const [editing, setEditing] = useState<Task | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [subtaskFor, setSubtaskFor] = useState<string | null>(null);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [taskModalFolderId, setTaskModalFolderId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<string[]>([]);
+  const [subtaskDraft, setSubtaskDraft] = useState<{
+    taskId: string;
+    subtaskId: string;
+    initialValue: string;
+  } | null>(null);
+  const [folderModal, setFolderModal] = useState<{ id?: string; initialValue?: string } | null>(null);
   const generalTasks = tasks.filter((t) => !t.date && !t.folderId);
 
   const add = () => {
     if (tab === 'folders') {
-      const name = window.prompt('Назва папки');
-      if (name) saveFolders([...folders, { id: uid(), name }]);
+      setFolderModal({});
       return;
     }
-    const value = window.prompt('Назва завдання');
+    setTaskModalFolderId(null);
+    setTaskModalOpen(true);
+  };
+
+  const saveNewTask = (value: string) => {
     const titles = value
-      ?.split(/\r?\n/)
+      .split(/\r?\n/)
       .map((item) => item.trim())
       .filter(Boolean);
-    if (titles?.length)
-      saveTasks([
-        ...tasks,
-        ...titles.map((title) => ({
-          id: uid(),
-          title,
-          completed: false,
-          subtasks: [],
-          createdAt: new Date().toISOString(),
-        })),
-      ]);
+    if (!titles.length) return;
+    saveTasks([
+      ...tasks,
+      ...titles.map((title) => ({
+        id: uid(),
+        title,
+        completed: false,
+        subtasks: [],
+        folderId: taskModalFolderId ?? undefined,
+        createdAt: new Date().toISOString(),
+      })),
+    ]);
+    setTaskModalOpen(false);
+    setTaskModalFolderId(null);
+  };
+
+  const saveFolder = (name: string) => {
+    if (!folderModal) return;
+    const nextName = name.trim();
+    if (!nextName) return;
+    saveFolders(
+      folderModal.id
+        ? folders.map((folder) => (folder.id === folderModal.id ? { ...folder, name: nextName } : folder))
+        : [...folders, { id: uid(), name: nextName }],
+    );
+    setFolderModal(null);
   };
 
   const toggle = (id: string) =>
     saveTasks(
       tasks.map((task) => (task.id === id ? toggleTaskCompletion(task) : task)),
     );
+  const select = (id: string) =>
+    setSelection((items) => (items.includes(id) ? items.filter((item) => item !== id) : [...items, id]));
 
   const toggleSub = (taskId: string, subId: string) =>
     saveTasks(
@@ -373,24 +437,26 @@ function General() {
     setSubtaskFor(null);
   };
 
+  const saveSubtaskDraft = (title: string) => {
+    if (!subtaskDraft) return;
+    saveTasks(
+      tasks.map((task) =>
+        task.id === subtaskDraft.taskId
+          ? {
+              ...task,
+              subtasks: task.subtasks.map((item) =>
+                item.id === subtaskDraft.subtaskId ? { ...item, title } : item,
+              ),
+            }
+          : task,
+      ),
+    );
+    setSubtaskDraft(null);
+  };
+
   const addToFolder = (folderId: string) => {
-    const value = window.prompt('Назва завдання');
-    const titles = value
-      ?.split(/\r?\n/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-    if (!titles?.length) return;
-    saveTasks([
-      ...tasks,
-      ...titles.map((title) => ({
-        id: uid(),
-        title,
-        completed: false,
-        subtasks: [],
-        folderId,
-        createdAt: new Date().toISOString(),
-      })),
-    ]);
+    setTaskModalFolderId(folderId);
+    setTaskModalOpen(true);
   };
 
   const openEditor = (task: Task) => {
@@ -425,6 +491,13 @@ function General() {
   };
 
   const subtaskAction = (taskId: string, subId: string, action: 'edit' | 'copy' | 'delete') => {
+    if (action === 'edit') {
+      const subtask = tasks
+        .find((task) => task.id === taskId)
+        ?.subtasks.find((item) => item.id === subId);
+      if (subtask) setSubtaskDraft({ taskId, subtaskId: subId, initialValue: taskText(subtask) });
+      return;
+    }
     saveTasks(
       tasks.map((task) => {
         if (task.id !== taskId) return task;
@@ -436,12 +509,7 @@ function General() {
         if (action === 'copy') {
           return { ...task, subtasks: [...task.subtasks, cloneTask(subtask)] };
         }
-        const title = window.prompt('Текст підзадачі', taskText(subtask));
-        if (!title) return task;
-        return {
-          ...task,
-          subtasks: task.subtasks.map((item) => (item.id === subId ? { ...item, title } : item)),
-        };
+        return task;
       }),
     );
   };
@@ -545,7 +613,7 @@ function General() {
               key={task.id}
               task={task}
               onToggle={() => toggle(task.id)}
-              onEdit={() => openEditor(task)}
+              onSelect={() => select(task.id)}
               onDelete={() => remove(task.id)}
               onAddSubtask={() => addSubtask(task.id)}
               onToggleSub={(sid) => toggleSub(task.id, sid)}
@@ -553,6 +621,7 @@ function General() {
               onSubEdit={(sid) => subtaskAction(task.id, sid, 'edit')}
               onSubCopy={(sid) => subtaskAction(task.id, sid, 'copy')}
               onSubDelete={(sid) => subtaskAction(task.id, sid, 'delete')}
+              selected={selection.includes(task.id)}
             />
           ))
         ) : tab === 'folders' && folders.length > 0 ? (
@@ -597,6 +666,24 @@ function General() {
                   <Plus size={14} />
                 </button>
                 <button
+                  onClick={() => setFolderModal({ id: folder.id, initialValue: folder.name })}
+                  aria-label="Редагувати папку"
+                  style={{
+                    border: 'none',
+                    background: 'rgba(255,255,255,0.08)',
+                    color: 'var(--txt-muted)',
+                    width: 30,
+                    height: 30,
+                    borderRadius: 999,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
                   onClick={() => {
                     if (window.confirm('Видалити папку?'))
                       saveFolders(folders.filter((f) => f.id !== folder.id));
@@ -624,7 +711,7 @@ function General() {
                     key={task.id}
                     task={task}
                     onToggle={() => toggle(task.id)}
-                    onEdit={() => openEditor(task)}
+                    onSelect={() => select(task.id)}
                     onDelete={() => remove(task.id)}
                     onAddSubtask={() => addSubtask(task.id)}
                     onToggleSub={(sid) => toggleSub(task.id, sid)}
@@ -632,6 +719,7 @@ function General() {
                     onSubEdit={(sid) => subtaskAction(task.id, sid, 'edit')}
                     onSubCopy={(sid) => subtaskAction(task.id, sid, 'copy')}
                     onSubDelete={(sid) => subtaskAction(task.id, sid, 'delete')}
+                    selected={selection.includes(task.id)}
                   />
                 ))}
             </section>
@@ -702,10 +790,35 @@ function General() {
       {editing && (
         <EditModal task={editing} onClose={() => setEditing(null)} onSave={onSaveEdit} />
       )}
+      {taskModalOpen && (
+        <SubtaskModal
+          heading="Нове завдання"
+          placeholder="Завдання"
+          onClose={() => setTaskModalOpen(false)}
+          onSave={saveNewTask}
+        />
+      )}
       {subtaskFor && (
         <SubtaskModal
           onClose={() => setSubtaskFor(null)}
           onSave={(title) => saveSubtask(subtaskFor, title)}
+        />
+      )}
+      {subtaskDraft && (
+        <SubtaskModal
+          heading="Редагування підзадачі"
+          initialValue={subtaskDraft.initialValue}
+          onClose={() => setSubtaskDraft(null)}
+          onSave={saveSubtaskDraft}
+        />
+      )}
+      {folderModal && (
+        <SubtaskModal
+          heading={folderModal.id ? 'Редагування папки' : 'Нова папка'}
+          placeholder="Назва папки"
+          initialValue={folderModal.initialValue}
+          onClose={() => setFolderModal(null)}
+          onSave={saveFolder}
         />
       )}
       {menuFor && (

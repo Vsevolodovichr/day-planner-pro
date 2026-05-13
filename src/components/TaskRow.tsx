@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronRight, MoreVertical } from 'lucide-react';
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Task } from '../types';
 import { taskText } from '../lib/task-utils';
 
@@ -43,6 +44,7 @@ export function TaskRow({
   onDeleteSubtask,
   variant = 'default',
   selected = false,
+  subtaskTogglePlacement = 'inline',
 }: {
   task: Task;
   onToggle: () => void;
@@ -53,18 +55,21 @@ export function TaskRow({
   onDeleteSubtask?: (id: string) => void;
   variant?: 'default' | 'list';
   selected?: boolean;
+  subtaskTogglePlacement?: 'inline' | 'bottom-right';
 }) {
   const [subtasksOpen, setSubtasksOpen] = useState(false);
   const [subtaskMenuFor, setSubtaskMenuFor] = useState<string | null>(null);
   const checked = task.completed;
   const text = taskText(task);
+  const subtaskDone = task.subtasks.filter((s) => s.completed).length;
+  const isBottomSubtaskToggle = subtaskTogglePlacement === 'bottom-right';
 
   return (
     <div
       style={{
         borderBottom: '1px solid var(--hairline)',
         background: selected
-          ? 'linear-gradient(180deg, var(--accent-18) 0%, var(--accent-04) 100%)'
+          ? 'linear-gradient(180deg, var(--accent-18) 30%, var(--accent-04) 60%)'
           : 'transparent',
         borderRadius: selected ? 12 : 0,
         margin: selected ? '4px 6px' : 0,
@@ -78,7 +83,12 @@ export function TaskRow({
           alignItems: 'flex-start',
           gap: 12,
           minHeight: 56,
-          padding: '10px 14px',
+          padding: isBottomSubtaskToggle
+            ? task.subtasks.length > 0
+              ? '10px 82px 34px 14px'
+              : '10px 52px 10px 14px'
+            : '10px 14px',
+          position: 'relative',
         }}
       >
         <button
@@ -120,7 +130,7 @@ export function TaskRow({
           >
             {text}
           </div>
-          {task.subtasks.length > 0 && (
+          {task.subtasks.length > 0 && !isBottomSubtaskToggle && (
             <div
               style={{
                 marginTop: 4,
@@ -128,7 +138,7 @@ export function TaskRow({
                 color: 'var(--txt-muted)',
               }}
             >
-              {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} підзадач
+              {subtaskDone}/{task.subtasks.length} підзадач
             </div>
           )}
         </button>
@@ -147,7 +157,7 @@ export function TaskRow({
           </span>
         )}
 
-        {task.subtasks.length > 0 && (
+        {task.subtasks.length > 0 && !isBottomSubtaskToggle && (
           <button
             onClick={() => setSubtasksOpen((v) => !v)}
             aria-label={subtasksOpen ? 'Сховати підзадачі' : 'Показати підзадачі'}
@@ -176,10 +186,46 @@ export function TaskRow({
             color: 'var(--txt-dim)',
             display: 'inline-flex',
             alignItems: 'center',
+            justifyContent: 'center',
+            position: isBottomSubtaskToggle ? 'absolute' : 'static',
+            top: isBottomSubtaskToggle ? 8 : undefined,
+            right: isBottomSubtaskToggle ? 10 : undefined,
+            width: isBottomSubtaskToggle ? 32 : undefined,
+            height: isBottomSubtaskToggle ? 32 : undefined,
           }}
         >
           <MoreVertical size={20} strokeWidth={1.8} />
         </button>
+
+        {task.subtasks.length > 0 && isBottomSubtaskToggle && (
+          <button
+            onClick={() => setSubtasksOpen((v) => !v)}
+            aria-label={subtasksOpen ? 'Сховати підзадачі' : 'Показати підзадачі'}
+            style={{
+              position: 'absolute',
+              right: 12,
+              bottom: 8,
+              border: '1px solid var(--glass-stroke)',
+              borderRadius: 999,
+              background: subtasksOpen ? 'var(--gold-shine)' : 'rgba(255,255,255,0.08)',
+              color: subtasksOpen ? '#1A1308' : 'var(--gold-text-strong)',
+              padding: '4px 8px 4px 9px',
+              minWidth: 58,
+              height: 28,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4,
+              fontSize: 12,
+              fontWeight: 700,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            <span>{subtaskDone}/{task.subtasks.length}</span>
+            {subtasksOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </button>
+        )}
       </div>
 
       {subtasksOpen && task.subtasks.length > 0 && (
@@ -251,13 +297,13 @@ export function TaskRow({
           ))}
         </div>
       )}
-      {subtaskMenuFor && (
+      {subtaskMenuFor && createPortal(
         <div
           onClick={() => setSubtaskMenuFor(null)}
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 75,
+            zIndex: 90,
             background: 'rgba(0,0,0,0.68)',
             display: 'flex',
             alignItems: 'flex-end',
@@ -320,7 +366,8 @@ export function TaskRow({
               </button>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

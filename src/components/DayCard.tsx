@@ -95,7 +95,7 @@ export function DayCard({
     <section
       className="glass"
       style={{
-        borderRadius: 12,
+        borderRadius: 10,
         overflow: 'hidden',
         ...(isToday
           ? {

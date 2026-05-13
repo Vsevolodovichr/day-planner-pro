@@ -21,7 +21,7 @@ export function ContextActionSheet({
       onClick={onClose}
     >
       <div
-        className="w-full sm:w-[428px] px-4 pb-[calc(6.25rem+env(safe-area-inset-bottom))] space-y-2.5"
+        className="w-full sm:w-107 px-4 pb-[calc(6.25rem+env(safe-area-inset-bottom))] space-y-2.5"
         onClick={(e) => e.stopPropagation()}
       >
         {items.map(({ Icon, label, key }) => (

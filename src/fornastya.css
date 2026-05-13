@@ -51,18 +51,18 @@
   --accent-light-50: rgba(248, 220, 138, 0.50);
 
   /* Glass surface (intensity 85%) */
-  --glass-a: rgba(255,255,255,0.076);
-  --glass-b: rgba(255,255,255,0.036);
-  --glass-stroke: hsla(0 0% 20% / 0.6);
-  --glass-hilite: rgba(255,255,255,0.125);
-  --glass-blur: 50px;
+  --glass-a: hsla(0 0% 20% / 0.04);
+  --glass-b: hsla(0 0% 20% / 0.02);
+  --glass-stroke: hsla(0 0% 20% / 0.4);
+  --glass-hilite: hsla(0 0% 20% / 0.125);
+  --glass-blur: 10px;
 
   /* Border-radius scale */
   --r-xl: 30px;
   --r-lg: 22px;
   --r-md: 16px;
   --r-sm: 10px;
-  --r-pill: 999px;
+  --r-pill: 9px;
 
   /* Text colors */
   --txt-main: #F4F5F7;
@@ -117,7 +117,7 @@ input:focus, textarea:focus { outline: none; }
 
 /* Glass surface utility */
 .glass {
-  background: linear-gradient(180deg, var(--glass-a) 0%, var(--glass-b) 100%);
+  background: linear-gradient(180deg, var(--glass-a) 30%, var(--glass-b) 10%);
   backdrop-filter: blur(var(--glass-blur)) saturate(180%);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
   border: 1px solid var(--glass-stroke);
@@ -139,7 +139,7 @@ input:focus, textarea:focus { outline: none; }
   --app-shell-bg-width: 100vw;
   --app-shell-bg-height: 100dvh;
   background:
-    linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.12) 100%),
+    linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.12) 70%),
     var(--bg-image) center / cover no-repeat,
     var(--bg-app);
   background-attachment: fixed, fixed, fixed;
@@ -162,20 +162,20 @@ input:focus, textarea:focus { outline: none; }
 
 .fornastya-phone::before {
   background:
-    linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.12) 100%),
+    linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.62) 80%),
     var(--bg-image) center / cover no-repeat,
     var(--bg-app);
 }
 
 .fornastya-phone::after {
   background:
-    linear-gradient(rgba(var(--accent-rgb), 0.64), rgba(var(--accent-rgb), 0.64)),
+    linear-gradient(rgba(var(--accent-rgb), 0.94), rgba(var(--accent-rgb), 0.94)),
     var(--bg-image) center / cover no-repeat;
   background-attachment: fixed, fixed;
   background-blend-mode: multiply;
   mix-blend-mode: screen;
   filter: brightness(1.45) contrast(2.6);
-  opacity: 0.18;
+  opacity: 0.48;
 }
 
 .fornastya-phone > * {
@@ -195,7 +195,7 @@ input:focus, textarea:focus { outline: none; }
   display: flex;
   align-items: stretch;
   transform: translateX(-50%);
-  background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%);
+  background: linear-gradient(180deg, hsla(0 0% 20% / 0.125); 0%, hsla(0 0% 20% / 0.125) 20%);
 }
 
 .app-bottom-nav__item {
@@ -248,8 +248,8 @@ input:focus, textarea:focus { outline: none; }
   }
 
   .fornastya-phone {
-    --app-shell-main-bottom: 32px;
-    --app-shell-action-bottom: 32px;
+    --app-shell-main-bottom: 116px;
+    --app-shell-action-bottom: 116px;
     --app-shell-bg-left: calc((100vw - min(calc(100vw - 48px), 1180px)) / 2);
     --app-shell-bg-top: 24px;
     --app-shell-bg-width: min(calc(100vw - 48px), 1180px);
@@ -261,35 +261,28 @@ input:focus, textarea:focus { outline: none; }
   }
 
   .fornastya-phone.has-toolbar .app-shell-main {
-    padding-left: 124px;
     padding-right: 24px;
   }
 
   .app-bottom-nav {
-    position: absolute;
-    top: 24px;
     bottom: 24px;
-    left: 24px;
-    width: 84px;
-    max-width: none;
-    padding: 10px 8px;
-    flex-direction: column;
-    gap: 6px;
-    transform: none;
+    width: min(calc(100% - 96px), 640px);
+    max-width: 640px;
+    padding: 12px 10px;
+    gap: 8px;
     border-radius: 28px;
   }
 
   .app-bottom-nav__item {
-    flex: 0 0 auto;
-    min-height: 74px;
-    padding: 10px 6px;
+    min-height: 72px;
+    padding: 10px 8px;
     gap: 6px;
     border-radius: 20px;
   }
 
   .app-bottom-nav__item span {
-    line-height: 1.15;
+    font-size: 11px;
+    line-height: 1.1;
     text-align: center;
-    white-space: normal;
   }
 }

@@ -132,7 +132,7 @@ function CalendarScreen() {
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(7, 1fr)',
-              marginBottom: 6,
+              marginBottom: 4,
             }}
           >
             {UA_WEEKDAY_HEADER.map((wd, i) => (
@@ -168,6 +168,7 @@ function CalendarScreen() {
                   style={{
                     position: 'relative',
                     height: 42,
+                    width: 42,
                     border: 'none',
                     background: 'transparent',
                     cursor: 'pointer',
@@ -253,7 +254,7 @@ function CalendarScreen() {
             <div
               style={{
                 fontSize: 18,
-                fontWeight: 600,
+                fontWeight: 500,
                 letterSpacing: -0.3,
                 color: 'var(--txt-main)',
               }}
@@ -294,7 +295,7 @@ function CalendarScreen() {
               style={{
                 marginTop: 12,
                 height: 40,
-                borderRadius: 999,
+                borderRadius: 36,
                 border: '1px solid var(--accent-45)',
                 background: 'var(--accent-06)',
                 color: 'var(--gold-text-strong)',
