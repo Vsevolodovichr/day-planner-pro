@@ -11,7 +11,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png"],
+      includeAssets: ["app-background.png", "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png"],
       manifest: {
         name: "Мої задачі",
         short_name: "11 хвилин",
@@ -37,7 +37,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{css,html,ico,js,svg,webmanifest,woff,woff2}"],
+        globPatterns: ["**/*.{css,html,ico,js,png,svg,webmanifest,woff,woff2}"],
         navigateFallback: "/index.html",
         runtimeCaching: [
           {

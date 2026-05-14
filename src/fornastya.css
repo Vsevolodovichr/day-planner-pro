@@ -98,7 +98,9 @@
 html,
 body,
 #root {
-  background: #000;
+  background:
+    var(--bg-image) center / cover no-repeat,
+    var(--bg-app);
   color: var(--txt-main);
   font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
