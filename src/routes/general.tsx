@@ -454,7 +454,12 @@ function General() {
     const oldIndex = folderIds.indexOf(String(active.id));
     const newIndex = folderIds.indexOf(String(over.id));
     if (oldIndex < 0 || newIndex < 0) return;
-    saveFolders(arrayMove(orderedFolders, oldIndex, newIndex).map((folder, sortOrder) => ({ ...folder, sortOrder })));
+    saveFolders(
+      arrayMove(orderedFolders, oldIndex, newIndex).map((folder, sortOrder) => ({
+        ...folder,
+        sortOrder,
+      })),
+    );
   };
 
   const toggle = (id: string) =>
@@ -714,154 +719,157 @@ function General() {
           >
             <SortableContext items={folderIds} strategy={verticalListSortingStrategy}>
               {orderedFolders.map((folder) => {
-            const collapsed = !expandedFolderIds.includes(folder.id);
-            const folderTasks = folderTasksForPlanner(tasks, folder.id);
-            return (
-            <SortableFolderCard key={folder.id} folder={folder}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: 10,
-                  padding: '14px 16px',
-                  borderBottom: collapsed ? 'none' : '1px solid var(--hairline)',
-                }}
-              >
-                <button
-                  onMouseDown={stopFolderDragActivation}
-                  onTouchStart={stopFolderDragActivation}
-                  onClick={() => toggleFolderCollapsed(folder.id)}
-                  aria-label={collapsed ? 'Розгорнути папку' : 'Згорнути папку'}
-                  style={{
-                    border: 'none',
-                    background: 'rgba(255,255,255,0.08)',
-                    color: 'var(--txt-muted)',
-                    width: 30,
-                    height: 30,
-                    borderRadius: 999,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                </button>
-                <FolderIcon size={16} color="var(--gold-text)" />
-                <span
-                  className="gold-text"
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    flex: 1,
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {folder.name}
-                </span>
-                <button
-                  onMouseDown={stopFolderDragActivation}
-                  onTouchStart={stopFolderDragActivation}
-                  onClick={() => addToFolder(folder.id)}
-                  aria-label="Додати завдання"
-                  style={{
-                    border: 'none',
-                    background: 'var(--accent-08)',
-                    color: 'var(--gold-text-strong)',
-                    width: 30,
-                    height: 30,
-                    borderRadius: 999,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Plus size={14} />
-                </button>
-                <button
-                  onMouseDown={stopFolderDragActivation}
-                  onTouchStart={stopFolderDragActivation}
-                  onClick={() => setFolderModal({ id: folder.id, initialValue: folder.name })}
-                  aria-label="Редагувати папку"
-                  style={{
-                    border: 'none',
-                    background: 'rgba(255,255,255,0.08)',
-                    color: 'var(--txt-muted)',
-                    width: 30,
-                    height: 30,
-                    borderRadius: 999,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  onMouseDown={stopFolderDragActivation}
-                  onTouchStart={stopFolderDragActivation}
-                  onClick={() => {
-                    if (window.confirm('Видалити папку?'))
-                      saveFolders(folders.filter((f) => f.id !== folder.id));
-                  }}
-                  style={{
-                    border: 'none',
-                    background: 'rgba(255,90,90,0.10)',
-                    color: '#FF8B8B',
-                    width: 30,
-                    height: 30,
-                    borderRadius: 999,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-              {!collapsed && folderTasks.length > 0 && (
-                <div
-                  onMouseDown={stopFolderDragActivation}
-                  onTouchStart={stopFolderDragActivation}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 3,
-                    paddingTop: 3,
-                  }}
-                >
-                  <SortableTaskList
-                    tasks={folderTasks}
-                    variant="list"
-                    selectedIds={selection}
-                    subtaskTogglePlacement="bottom-right"
-                    onToggle={toggle}
-                    onSelect={select}
-                    onMenu={(taskId) => setMenuFor(taskId)}
-                    onToggleSubtask={toggleSub}
-                    onEditSubtask={(taskId, subtaskId) => subtaskAction(taskId, subtaskId, 'edit')}
-                    onDeleteSubtask={(taskId, subtaskId) =>
-                      subtaskAction(taskId, subtaskId, 'delete')
-                    }
-                    onReorder={(orderedIds) => reorderFolderTaskList(folder.id, orderedIds)}
-                    itemClassName="glass"
-                    itemStyle={{
-                      borderRadius: 12,
-                      overflow: 'hidden',
-                      background: 'rgba(18,18,20,0.76)',
-                    }}
-                  />
-                </div>
-              )}
-            </SortableFolderCard>
-            );
+                const collapsed = !expandedFolderIds.includes(folder.id);
+                const folderTasks = folderTasksForPlanner(tasks, folder.id);
+
+                return (
+                  <SortableFolderCard key={folder.id} folder={folder}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: 10,
+                        padding: '14px 16px',
+                        borderBottom: collapsed ? 'none' : '1px solid var(--hairline)',
+                      }}
+                    >
+                      <button
+                        onMouseDown={stopFolderDragActivation}
+                        onTouchStart={stopFolderDragActivation}
+                        onClick={() => toggleFolderCollapsed(folder.id)}
+                        aria-label={collapsed ? 'Розгорнути папку' : 'Згорнути папку'}
+                        style={{
+                          border: 'none',
+                          background: 'rgba(255,255,255,0.08)',
+                          color: 'var(--txt-muted)',
+                          width: 30,
+                          height: 30,
+                          borderRadius: 999,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                      </button>
+                      <FolderIcon size={16} color="var(--gold-text)" />
+                      <span
+                        className="gold-text"
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 600,
+                          flex: 1,
+                          minWidth: 0,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {folder.name}
+                      </span>
+                      <button
+                        onMouseDown={stopFolderDragActivation}
+                        onTouchStart={stopFolderDragActivation}
+                        onClick={() => addToFolder(folder.id)}
+                        aria-label="Додати завдання"
+                        style={{
+                          border: 'none',
+                          background: 'var(--accent-08)',
+                          color: 'var(--gold-text-strong)',
+                          width: 30,
+                          height: 30,
+                          borderRadius: 999,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Plus size={14} />
+                      </button>
+                      <button
+                        onMouseDown={stopFolderDragActivation}
+                        onTouchStart={stopFolderDragActivation}
+                        onClick={() => setFolderModal({ id: folder.id, initialValue: folder.name })}
+                        aria-label="Редагувати папку"
+                        style={{
+                          border: 'none',
+                          background: 'rgba(255,255,255,0.08)',
+                          color: 'var(--txt-muted)',
+                          width: 30,
+                          height: 30,
+                          borderRadius: 999,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onMouseDown={stopFolderDragActivation}
+                        onTouchStart={stopFolderDragActivation}
+                        onClick={() => {
+                          if (window.confirm('Видалити папку?'))
+                            saveFolders(folders.filter((f) => f.id !== folder.id));
+                        }}
+                        style={{
+                          border: 'none',
+                          background: 'rgba(255,90,90,0.10)',
+                          color: '#FF8B8B',
+                          width: 30,
+                          height: 30,
+                          borderRadius: 999,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    {!collapsed && folderTasks.length > 0 && (
+                      <div
+                        onMouseDown={stopFolderDragActivation}
+                        onTouchStart={stopFolderDragActivation}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 3,
+                          paddingTop: 3,
+                        }}
+                      >
+                        <SortableTaskList
+                          tasks={folderTasks}
+                          variant="list"
+                          selectedIds={selection}
+                          subtaskTogglePlacement="bottom-right"
+                          onToggle={toggle}
+                          onSelect={select}
+                          onMenu={(taskId) => setMenuFor(taskId)}
+                          onToggleSubtask={toggleSub}
+                          onEditSubtask={(taskId, subtaskId) =>
+                            subtaskAction(taskId, subtaskId, 'edit')
+                          }
+                          onDeleteSubtask={(taskId, subtaskId) =>
+                            subtaskAction(taskId, subtaskId, 'delete')
+                          }
+                          onReorder={(orderedIds) => reorderFolderTaskList(folder.id, orderedIds)}
+                          itemClassName="glass"
+                          itemStyle={{
+                            borderRadius: 12,
+                            overflow: 'hidden',
+                            background: 'rgba(18,18,20,0.76)',
+                          }}
+                        />
+                      </div>
+                    )}
+                  </SortableFolderCard>
+                );
               })}
             </SortableContext>
           </DndContext>
