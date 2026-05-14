@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ArrowDown,
   ArrowUp,
@@ -30,7 +30,18 @@ import type { Task } from '../types';
 
 export const Route = createFileRoute('/general')({ component: General });
 
-const COLLAPSED_FOLDERS_STORAGE_KEY = 'mz_general_collapsed_folders';
+const EXPANDED_FOLDERS_STORAGE_KEY = 'mz_general_expanded_folders';
+const LEGACY_COLLAPSED_FOLDERS_STORAGE_KEY = 'mz_general_collapsed_folders';
+
+function parseFolderIdList(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
 
 function EditModal({
   task,
@@ -359,18 +370,28 @@ function General() {
     initialValue: string;
   } | null>(null);
   const [folderModal, setFolderModal] = useState<{ id?: string; initialValue?: string } | null>(null);
-  const [collapsedFolderIds, setCollapsedFolderIds] = useState<string[]>(() => {
+  const [expandedFolderIds, setExpandedFolderIds] = useState<string[]>(() => {
     if (typeof window === 'undefined') return [];
-    try {
-      const raw = window.localStorage.getItem(COLLAPSED_FOLDERS_STORAGE_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
-    } catch {
-      return [];
-    }
+    return parseFolderIdList(window.localStorage.getItem(EXPANDED_FOLDERS_STORAGE_KEY));
   });
   const generalTasks = generalTasksForPlanner(tasks);
   const orderedFolders = [...folders].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || folders.length === 0) return;
+    if (window.localStorage.getItem(EXPANDED_FOLDERS_STORAGE_KEY) !== null) return;
+
+    const legacyRaw = window.localStorage.getItem(LEGACY_COLLAPSED_FOLDERS_STORAGE_KEY);
+    if (legacyRaw === null) return;
+
+    const legacyCollapsedFolderIds = parseFolderIdList(legacyRaw);
+    const next = folders
+      .map((folder) => folder.id)
+      .filter((id) => !legacyCollapsedFolderIds.includes(id));
+
+    setExpandedFolderIds(next);
+    window.localStorage.setItem(EXPANDED_FOLDERS_STORAGE_KEY, JSON.stringify(next));
+  }, [folders]);
 
   const add = () => {
     if (tab === 'folders') {
@@ -416,12 +437,12 @@ function General() {
   };
 
   const toggleFolderCollapsed = (folderId: string) => {
-    const next = collapsedFolderIds.includes(folderId)
-      ? collapsedFolderIds.filter((id) => id !== folderId)
-      : [...collapsedFolderIds, folderId];
-    setCollapsedFolderIds(next);
+    const next = expandedFolderIds.includes(folderId)
+      ? expandedFolderIds.filter((id) => id !== folderId)
+      : [...expandedFolderIds, folderId];
+    setExpandedFolderIds(next);
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(COLLAPSED_FOLDERS_STORAGE_KEY, JSON.stringify(next));
+      window.localStorage.setItem(EXPANDED_FOLDERS_STORAGE_KEY, JSON.stringify(next));
     }
   };
 
@@ -678,7 +699,7 @@ function General() {
           />
         ) : tab === 'folders' && folders.length > 0 ? (
           orderedFolders.map((folder, folderIndex) => {
-            const collapsed = collapsedFolderIds.includes(folder.id);
+            const collapsed = !expandedFolderIds.includes(folder.id);
             return (
             <section
               key={folder.id}

@@ -55,7 +55,7 @@
   --glass-b: hsla(0 0% 20% / 0.02);
   --glass-stroke: hsla(0 0% 20% / 0.4);
   --glass-hilite: hsla(0 0% 20% / 0.125);
-  --glass-blur: 10px;
+ /* --glass-blur: 10px;*/
 
   /* Border-radius scale */
   --r-xl: 30px;
@@ -197,7 +197,7 @@ input:focus, textarea:focus { outline: none; }
   display: flex;
   align-items: stretch;
   transform: translateX(-50%);
-  background: linear-gradient(180deg, hsla(0 0% 20% / 0.125); 0%, hsla(0 0% 20% / 0.125) 20%);
+  background: linear-gradient(180deg, hsla(0 0% 20% / 0.125), 0%, hsla(0 0% 20% / 0.125) 20%);
 }
 
 .app-bottom-nav__item {
