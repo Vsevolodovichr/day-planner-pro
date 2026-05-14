@@ -11,7 +11,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["app-background.png", "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png"],
+      includeAssets: ["app-background.png", "icons/icon-192.png", "icons/icon-512.png"],
       manifest: {
         name: "Мої задачі",
         short_name: "11 хвилин",
@@ -19,8 +19,8 @@ export default defineConfig({
         scope: "/",
         display: "standalone",
         lang: "uk",
-        background_color: "#050607",
-        theme_color: "#42FFF4",
+        background_color: "#000000",
+        theme_color: "#000000",
         icons: [
           {
             src: "/icons/icon-192.png",
