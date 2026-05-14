@@ -1,7 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import {
+  ArrowDown,
+  ArrowUp,
   Check,
+  ChevronDown,
+  ChevronRight,
   Folder as FolderIcon,
   Pencil,
   Plus,
@@ -25,6 +29,8 @@ import {
 import type { Task } from '../types';
 
 export const Route = createFileRoute('/general')({ component: General });
+
+const COLLAPSED_FOLDERS_STORAGE_KEY = 'mz_general_collapsed_folders';
 
 function EditModal({
   task,
@@ -353,7 +359,18 @@ function General() {
     initialValue: string;
   } | null>(null);
   const [folderModal, setFolderModal] = useState<{ id?: string; initialValue?: string } | null>(null);
+  const [collapsedFolderIds, setCollapsedFolderIds] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem(COLLAPSED_FOLDERS_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+    } catch {
+      return [];
+    }
+  });
   const generalTasks = generalTasksForPlanner(tasks);
+  const orderedFolders = [...folders].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   const add = () => {
     if (tab === 'folders') {
@@ -389,12 +406,32 @@ function General() {
     if (!folderModal) return;
     const nextName = name.trim();
     if (!nextName) return;
+    const nextSortOrder = folders.reduce((max, folder) => Math.max(max, folder.sortOrder ?? 0), -1) + 1;
     saveFolders(
       folderModal.id
         ? folders.map((folder) => (folder.id === folderModal.id ? { ...folder, name: nextName } : folder))
-        : [...folders, { id: uid(), name: nextName }],
+        : [...folders, { id: uid(), name: nextName, sortOrder: nextSortOrder }],
     );
     setFolderModal(null);
+  };
+
+  const toggleFolderCollapsed = (folderId: string) => {
+    const next = collapsedFolderIds.includes(folderId)
+      ? collapsedFolderIds.filter((id) => id !== folderId)
+      : [...collapsedFolderIds, folderId];
+    setCollapsedFolderIds(next);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(COLLAPSED_FOLDERS_STORAGE_KEY, JSON.stringify(next));
+    }
+  };
+
+  const moveFolder = (folderId: string, direction: -1 | 1) => {
+    const index = orderedFolders.findIndex((folder) => folder.id === folderId);
+    const nextIndex = index + direction;
+    if (index < 0 || nextIndex < 0 || nextIndex >= orderedFolders.length) return;
+    const nextFolders = [...orderedFolders];
+    [nextFolders[index], nextFolders[nextIndex]] = [nextFolders[nextIndex], nextFolders[index]];
+    saveFolders(nextFolders.map((folder, sortOrder) => ({ ...folder, sortOrder })));
   };
 
   const toggle = (id: string) =>
@@ -640,7 +677,9 @@ function General() {
             }}
           />
         ) : tab === 'folders' && folders.length > 0 ? (
-          folders.map((folder) => (
+          orderedFolders.map((folder, folderIndex) => {
+            const collapsed = collapsedFolderIds.includes(folder.id);
+            return (
             <section
               key={folder.id}
               className="glass"
@@ -650,18 +689,85 @@ function General() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
+                  flexWrap: 'wrap',
                   gap: 10,
                   padding: '14px 16px',
-                  borderBottom: '1px solid var(--hairline)',
+                  borderBottom: collapsed ? 'none' : '1px solid var(--hairline)',
                 }}
               >
+                <button
+                  onClick={() => toggleFolderCollapsed(folder.id)}
+                  aria-label={collapsed ? 'Розгорнути папку' : 'Згорнути папку'}
+                  style={{
+                    border: 'none',
+                    background: 'rgba(255,255,255,0.08)',
+                    color: 'var(--txt-muted)',
+                    width: 30,
+                    height: 30,
+                    borderRadius: 999,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                </button>
                 <FolderIcon size={16} color="var(--gold-text)" />
                 <span
                   className="gold-text"
-                  style={{ fontSize: 16, fontWeight: 600, flex: 1, minWidth: 0 }}
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 600,
+                    flex: 1,
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
                 >
                   {folder.name}
                 </span>
+                <button
+                  onClick={() => moveFolder(folder.id, -1)}
+                  disabled={folderIndex === 0}
+                  aria-label="Підняти папку"
+                  style={{
+                    border: 'none',
+                    background: 'rgba(255,255,255,0.08)',
+                    color: 'var(--txt-muted)',
+                    width: 30,
+                    height: 30,
+                    borderRadius: 999,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: folderIndex === 0 ? 'default' : 'pointer',
+                    opacity: folderIndex === 0 ? 0.35 : 1,
+                  }}
+                >
+                  <ArrowUp size={14} />
+                </button>
+                <button
+                  onClick={() => moveFolder(folder.id, 1)}
+                  disabled={folderIndex === orderedFolders.length - 1}
+                  aria-label="Опустити папку"
+                  style={{
+                    border: 'none',
+                    background: 'rgba(255,255,255,0.08)',
+                    color: 'var(--txt-muted)',
+                    width: 30,
+                    height: 30,
+                    borderRadius: 999,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: folderIndex === orderedFolders.length - 1 ? 'default' : 'pointer',
+                    opacity: folderIndex === orderedFolders.length - 1 ? 0.35 : 1,
+                  }}
+                >
+                  <ArrowDown size={14} />
+                </button>
                 <button
                   onClick={() => addToFolder(folder.id)}
                   aria-label="Додати завдання"
@@ -719,7 +825,7 @@ function General() {
                   <Trash2 size={14} />
                 </button>
               </div>
-              {tasks
+              {!collapsed && tasks
                 .filter((task) => task.folderId === folder.id)
                 .map((task) => (
                   <TaskCard
@@ -738,7 +844,8 @@ function General() {
                   />
                 ))}
             </section>
-          ))
+            );
+          })
         ) : (
           <div
             className="glass"

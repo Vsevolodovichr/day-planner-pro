@@ -22,7 +22,7 @@ export type Note = {
   createdAt: string;
   updatedAt: string;
 };
-export type Folder = { id: string; name: string };
+export type Folder = { id: string; name: string; sortOrder: number };
 export type AppNotification = {
   id: string;
   title: string;

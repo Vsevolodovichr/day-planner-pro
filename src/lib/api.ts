@@ -28,6 +28,7 @@ type ApiTask = {
 type ApiFolder = {
   id: string;
   name: string;
+  sort_order?: number | null;
 };
 
 type ApiSubtask = {
@@ -238,23 +239,27 @@ function subtaskFromApi(subtask: ApiSubtask): Task {
 
 export async function getFolders(): Promise<Folder[]> {
   const payload = await requestJson<ApiList<ApiFolder>>('/api/tasks/folders');
-  return listPayload(payload).map((folder) => ({ id: folder.id, name: folder.name }));
+  return listPayload(payload).map((folder) => ({
+    id: folder.id,
+    name: folder.name,
+    sortOrder: folder.sort_order ?? 0,
+  }));
 }
 
 export async function createFolder(folder: Folder): Promise<Folder> {
   const created = await requestJson<ApiFolder>('/api/tasks/folders', {
     method: 'POST',
-    body: JSON.stringify({ name: folder.name }),
+    body: JSON.stringify({ name: folder.name, sort_order: folder.sortOrder }),
   });
-  return { id: created.id, name: created.name };
+  return { id: created.id, name: created.name, sortOrder: created.sort_order ?? folder.sortOrder };
 }
 
 export async function updateFolder(folder: Folder): Promise<Folder> {
   const updated = await requestJson<ApiFolder>(`/api/tasks/folders/${folder.id}`, {
     method: 'PATCH',
-    body: JSON.stringify({ name: folder.name }),
+    body: JSON.stringify({ name: folder.name, sort_order: folder.sortOrder }),
   });
-  return { id: updated.id, name: updated.name };
+  return { id: updated.id, name: updated.name, sortOrder: updated.sort_order ?? folder.sortOrder };
 }
 
 export async function deleteFolder(id: string): Promise<void> {
