@@ -6,31 +6,62 @@ import { getRouter } from './router';
 import './styles.css';
 import './fornastya.css';
 
-const PWA_UPDATE_CHECK_INTERVAL_MS = 60_000;
-
 const router = getRouter();
 const root = document.getElementById('root');
+let updateServiceWorker: ReturnType<typeof registerSW> | null = null;
+let pwaUpdateListenersAttached = false;
+
+function registerPwa() {
+  if (updateServiceWorker) return;
+
+  updateServiceWorker = registerSW({
+    immediate: true,
+    onNeedRefresh() {
+      if (!updateServiceWorker) return;
+      window.dispatchEvent(
+        new CustomEvent('pwa:update-ready', { detail: { updateServiceWorker } }),
+      );
+    },
+    onRegisteredSW(_swUrl, registration) {
+      if (!registration || pwaUpdateListenersAttached) return;
+
+      pwaUpdateListenersAttached = true;
+
+      let updateCheckInFlight = false;
+      const checkForUpdate = () => {
+        if (updateCheckInFlight) return;
+        if (!navigator.onLine || document.visibilityState !== 'visible') return;
+
+        updateCheckInFlight = true;
+        void registration.update().finally(() => {
+          updateCheckInFlight = false;
+        });
+      };
+
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          checkForUpdate();
+        }
+      };
+
+      window.addEventListener('online', checkForUpdate);
+      window.addEventListener('focus', checkForUpdate);
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      checkForUpdate();
+    },
+  });
+}
 
 if (!root) {
   throw new Error('Root element not found');
 }
 
-const updateServiceWorker = registerSW({
-  immediate: true,
-  onNeedRefresh() {
-    window.dispatchEvent(
-      new CustomEvent('pwa:update-ready', { detail: { updateServiceWorker } }),
-    );
-  },
-  onRegisteredSW(_swUrl, registration) {
-    if (!registration) return;
-
-    window.setInterval(() => {
-      if (!navigator.onLine) return;
-      void registration.update();
-    }, PWA_UPDATE_CHECK_INTERVAL_MS);
-  },
-});
+if (document.readyState === 'complete') {
+  registerPwa();
+} else {
+  window.addEventListener('load', registerPwa, { once: true });
+}
 
 ReactDOM.createRoot(root).render(
   <React.StrictMode>

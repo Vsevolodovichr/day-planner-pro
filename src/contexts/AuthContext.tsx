@@ -17,12 +17,43 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const PWA_LOGIN_UPDATE_DELAY_MS = 25_000;
 const PWA_UPDATE_TOAST_ID = 'pwa-update-ready';
+const STORED_USER_PROFILE_KEY = 'auth_user_profile';
 
 type UpdateServiceWorker = (reloadPage?: boolean) => Promise<void>;
 
 function getStoredAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('access_token');
+}
+
+function isOffline() {
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
+}
+
+function getStoredUserProfile(): Profile | null {
+  if (typeof window === 'undefined') return null;
+
+  const rawUser = localStorage.getItem(STORED_USER_PROFILE_KEY);
+  if (!rawUser) return null;
+
+  try {
+    const parsedUser = JSON.parse(rawUser);
+    const result = UserSchema.safeParse(parsedUser);
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
+
+function setStoredUserProfile(user: Profile | null) {
+  if (typeof window === 'undefined') return;
+
+  if (!user) {
+    localStorage.removeItem(STORED_USER_PROFILE_KEY);
+    return;
+  }
+
+  localStorage.setItem(STORED_USER_PROFILE_KEY, JSON.stringify(user));
 }
 
 function showPwaUpdatePrompt(updateServiceWorker: UpdateServiceWorker) {
@@ -50,12 +81,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    if (isOffline()) {
+      setUser(getStoredUserProfile());
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const { data } = await cloudflareApi.auth.getUser();
-      setUser((data.user as Profile | null) ?? null);
+      const nextUser = (data.user as Profile | null) ?? null;
+      setUser(nextUser);
+      setStoredUserProfile(nextUser);
     } catch {
+      if (isOffline()) {
+        const cachedUser = getStoredUserProfile();
+        if (cachedUser) {
+          setUser(cachedUser);
+          return;
+        }
+      }
+
       setUser(null);
+      setStoredUserProfile(null);
     } finally {
       setLoading(false);
     }
@@ -63,6 +111,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void reloadUser();
+  }, [reloadUser]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      void reloadUser();
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
   }, [reloadUser]);
 
   useEffect(() => {
@@ -109,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await cloudflareApi.auth.signOut();
     setUser(null);
+    setStoredUserProfile(null);
   }, []);
 
   const value = useMemo(
