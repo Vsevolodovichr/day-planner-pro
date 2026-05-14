@@ -10,10 +10,18 @@ import {
 } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
 import { ContextActionSheet } from '../components/ContextActionSheet';
+import { SortableTaskList } from '../components/SortableTaskList';
 import { TaskRow } from '../components/TaskRow';
 import { useFolders, useTasks } from '../components/Hooks';
 import { uid } from '../lib/storage';
-import { cloneTask, newSubtask, taskText, toggleTaskCompletion } from '../lib/task-utils';
+import {
+  cloneTask,
+  generalTasksForPlanner,
+  newSubtask,
+  reorderGeneralTasks,
+  taskText,
+  toggleTaskCompletion,
+} from '../lib/task-utils';
 import type { Task } from '../types';
 
 export const Route = createFileRoute('/general')({ component: General });
@@ -345,7 +353,7 @@ function General() {
     initialValue: string;
   } | null>(null);
   const [folderModal, setFolderModal] = useState<{ id?: string; initialValue?: string } | null>(null);
-  const generalTasks = tasks.filter((t) => !t.date && !t.folderId);
+  const generalTasks = generalTasksForPlanner(tasks);
 
   const add = () => {
     if (tab === 'folders') {
@@ -395,6 +403,10 @@ function General() {
     );
   const select = (id: string) =>
     setSelection((items) => (items.includes(id) ? items.filter((item) => item !== id) : [...items, id]));
+
+  const reorderGeneralTaskList = (orderedIds: string[]) => {
+    saveTasks(reorderGeneralTasks(tasks, orderedIds));
+  };
 
   const toggleSub = (taskId: string, subId: string) =>
     saveTasks(
@@ -608,22 +620,25 @@ function General() {
       {/* List */}
       <div style={{ padding: '4px 12px 12px', display: 'flex', flexDirection: 'column', gap: 3 }}>
         {tab === 'tasks' && generalTasks.length > 0 ? (
-          generalTasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onToggle={() => toggle(task.id)}
-              onSelect={() => select(task.id)}
-              onDelete={() => remove(task.id)}
-              onAddSubtask={() => addSubtask(task.id)}
-              onToggleSub={(sid) => toggleSub(task.id, sid)}
-              onMenu={() => setMenuFor(task.id)}
-              onSubEdit={(sid) => subtaskAction(task.id, sid, 'edit')}
-              onSubCopy={(sid) => subtaskAction(task.id, sid, 'copy')}
-              onSubDelete={(sid) => subtaskAction(task.id, sid, 'delete')}
-              selected={selection.includes(task.id)}
-            />
-          ))
+          <SortableTaskList
+            tasks={generalTasks}
+            variant="list"
+            selectedIds={selection}
+            subtaskTogglePlacement="bottom-right"
+            onToggle={toggle}
+            onSelect={select}
+            onMenu={(taskId) => setMenuFor(taskId)}
+            onToggleSubtask={toggleSub}
+            onEditSubtask={(taskId, subtaskId) => subtaskAction(taskId, subtaskId, 'edit')}
+            onDeleteSubtask={(taskId, subtaskId) => subtaskAction(taskId, subtaskId, 'delete')}
+            onReorder={reorderGeneralTaskList}
+            itemClassName="glass"
+            itemStyle={{
+              borderRadius: 12,
+              overflow: 'hidden',
+              background: 'rgba(18,18,20,0.76)',
+            }}
+          />
         ) : tab === 'folders' && folders.length > 0 ? (
           folders.map((folder) => (
             <section

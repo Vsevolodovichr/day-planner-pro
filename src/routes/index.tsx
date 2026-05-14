@@ -9,6 +9,7 @@ import {
   cloneTask,
   completedDayStreak,
   newSubtask,
+  reorderTasksForDate,
   taskText,
   tasksForDate,
   toggleTaskCompletion,
@@ -276,6 +277,10 @@ export function Home() {
     save(tasks.map((t) => (t.id === id ? toggleTaskCompletion(t) : t)));
   const select = (id: string) =>
     setSelection((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+
+  const reorderDayTasks = (iso: string, orderedIds: string[]) => {
+    save(reorderTasksForDate(tasks, iso, orderedIds));
+  };
 
   const action = (k: string, ids = selection) => {
     if (k === 'delete') {
@@ -595,6 +600,7 @@ export function Home() {
               onToggleSubtask={toggleSubtask}
               onEditSubtask={editSubtask}
               onDeleteSubtask={deleteSubtask}
+              onReorder={(orderedIds) => reorderDayTasks(iso, orderedIds)}
               onSelect={select}
               onMenu={(id) => setMenuFor(id)}
               selectedIds={selection}

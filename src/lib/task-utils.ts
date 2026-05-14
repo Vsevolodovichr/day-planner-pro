@@ -67,7 +67,49 @@ export function taskOccursOnDate(task: Task, iso: string): boolean {
 }
 
 export function tasksForDate(tasks: Task[], iso: string): Task[] {
-  return tasks.filter((task) => taskOccursOnDate(task, iso));
+  return tasks
+    .map((task, index) => ({ task, index }))
+    .filter(({ task }) => taskOccursOnDate(task, iso))
+    .sort((a, b) => {
+      const orderA = typeof a.task.plannerOrder === 'number' ? a.task.plannerOrder : a.index;
+      const orderB = typeof b.task.plannerOrder === 'number' ? b.task.plannerOrder : b.index;
+      return orderA === orderB ? a.index - b.index : orderA - orderB;
+    })
+    .map(({ task }) => task);
+}
+
+export function reorderTasksForDate(tasks: Task[], iso: string, orderedIds: string[]): Task[] {
+  const ordered = new Map(orderedIds.map((id, index) => [id, index + 1]));
+  const dayTaskIds = new Set(tasksForDate(tasks, iso).map((task) => task.id));
+
+  return tasks.map((task) => {
+    if (!dayTaskIds.has(task.id)) return task;
+    const plannerOrder = ordered.get(task.id);
+    return typeof plannerOrder === 'number' ? { ...task, plannerOrder } : task;
+  });
+}
+
+export function generalTasksForPlanner(tasks: Task[]): Task[] {
+  return tasks
+    .map((task, index) => ({ task, index }))
+    .filter(({ task }) => !task.date && !task.folderId)
+    .sort((a, b) => {
+      const orderA = typeof a.task.plannerOrder === 'number' ? a.task.plannerOrder : a.index;
+      const orderB = typeof b.task.plannerOrder === 'number' ? b.task.plannerOrder : b.index;
+      return orderA === orderB ? a.index - b.index : orderA - orderB;
+    })
+    .map(({ task }) => task);
+}
+
+export function reorderGeneralTasks(tasks: Task[], orderedIds: string[]): Task[] {
+  const ordered = new Map(orderedIds.map((id, index) => [id, index + 1]));
+  const generalTaskIds = new Set(generalTasksForPlanner(tasks).map((task) => task.id));
+
+  return tasks.map((task) => {
+    if (!generalTaskIds.has(task.id)) return task;
+    const plannerOrder = ordered.get(task.id);
+    return typeof plannerOrder === 'number' ? { ...task, plannerOrder } : task;
+  });
 }
 
 export function applyAutoMove(tasks: Task[], todayISO = toISO(new Date())): Task[] {

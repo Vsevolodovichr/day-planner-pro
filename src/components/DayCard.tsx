@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { Task } from '../types';
 import { fromISO, UA_DAYS_FULL, UA_DAYS_SHORT, UA_MONTHS } from '../lib/date';
-import { TaskRow } from './TaskRow';
+import { SortableTaskList } from './SortableTaskList';
 
 function ProgressRing({
   value = 0,
@@ -57,6 +57,7 @@ export function DayCard({
   onToggleSubtask,
   onEditSubtask,
   onDeleteSubtask,
+  onReorder,
   onSelect,
   onMenu,
   selectedIds = [],
@@ -69,6 +70,7 @@ export function DayCard({
   onToggleSubtask: (taskId: string, subtaskId: string) => void;
   onEditSubtask: (taskId: string, subtaskId: string) => void;
   onDeleteSubtask: (taskId: string, subtaskId: string) => void;
+  onReorder?: (orderedIds: string[]) => void;
   onSelect: (id: string) => void;
   onMenu: (id: string) => void;
   selectedIds?: string[];
@@ -232,8 +234,8 @@ export function DayCard({
             role="button"
             aria-label="Додати завдання"
             style={{
-              width: 22,
-              height: 22,
+              width: 26,
+              height: 26,
               borderRadius: '50%',
               background: 'var(--accent-10)',
               display: 'flex',
@@ -269,20 +271,18 @@ export function DayCard({
               На цей день нічого не заплановано
             </div>
           ) : (
-            tasks.map((t) => (
-              <TaskRow
-                key={t.id}
-                task={t}
+            <SortableTaskList
+              tasks={tasks}
                 variant="list"
-                selected={selectedIds.includes(t.id)}
-                onToggle={() => onToggle(t.id)}
-                onSelect={() => onSelect(t.id)}
-                onMenu={() => onMenu(t.id)}
-                onToggleSubtask={(subtaskId) => onToggleSubtask(t.id, subtaskId)}
-                onEditSubtask={(subtaskId) => onEditSubtask(t.id, subtaskId)}
-                onDeleteSubtask={(subtaskId) => onDeleteSubtask(t.id, subtaskId)}
-              />
-            ))
+              selectedIds={selectedIds}
+              onToggle={onToggle}
+              onSelect={onSelect}
+              onMenu={onMenu}
+              onToggleSubtask={onToggleSubtask}
+              onEditSubtask={onEditSubtask}
+              onDeleteSubtask={onDeleteSubtask}
+              onReorder={onReorder}
+            />
           )}
         </div>
       )}

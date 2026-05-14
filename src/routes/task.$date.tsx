@@ -3,10 +3,11 @@ import { useEffect, useState } from 'react';
 import { ChevronLeft, Check, ChevronDown, Clock, Repeat2, Sparkles, Palette } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
 import { IOSSwitch } from '../components/IOSSwitch';
+import { SortableTaskList } from '../components/SortableTaskList';
 import { useTasks } from '../components/Hooks';
 import { uid } from '../lib/storage';
 import { formatLong } from '../lib/date';
-import { taskText } from '../lib/task-utils';
+import { reorderTasksForDate, taskText, tasksForDate, toggleTaskCompletion } from '../lib/task-utils';
 
 const repeatOptions = [
   { value: 'daily', label: 'Кожен день' },
@@ -52,6 +53,7 @@ function TaskEditor() {
   const [repeat, setRepeat] = useState<RepeatValue>(existing?.repeat ?? 'none');
   const [showRepeatPicker, setShowRepeatPicker] = useState(false);
   const [autoMove, setAutoMove] = useState(Boolean(existing?.autoMove));
+  const dayTasks = tasksForDate(tasks, date);
 
   useEffect(() => {
     if (!existing) return;
@@ -81,6 +83,14 @@ function TaskEditor() {
       setRepeat('none');
       setShowRepeatPicker(false);
     }
+  };
+
+  const toggleDayTask = (taskId: string) => {
+    save(tasks.map((task) => (task.id === taskId ? toggleTaskCompletion(task) : task)));
+  };
+
+  const reorderDayTasks = (orderedIds: string[]) => {
+    save(reorderTasksForDate(tasks, date, orderedIds));
   };
 
   const submit = () => {
@@ -173,6 +183,21 @@ function TaskEditor() {
       </div>
 
       <div style={{ padding: '4px 14px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {dayTasks.length > 0 && (
+          <div className="glass" style={{ borderRadius: 18, overflow: 'hidden' }}>
+            <SortableTaskList
+              tasks={dayTasks}
+              variant="list"
+              selectedIds={id ? [id] : []}
+              onToggle={toggleDayTask}
+              onSelect={(taskId) =>
+                navigate({ to: '/task/$date', params: { date }, search: { id: taskId } })
+              }
+              onReorder={reorderDayTasks}
+            />
+          </div>
+        )}
+
         {/* Title input */}
         <div
           className="glass"
