@@ -49,6 +49,7 @@
   --accent-light-18: rgba(248, 220, 138, 0.18);
   --accent-light-20: rgba(248, 220, 138, 0.20);
   --accent-light-50: rgba(248, 220, 138, 0.50);
+  --accent-light-85: rgba(248, 220, 138, 0.85);
 
   /* Glass surface (intensity 85%) */
   --glass-a: hsla(0 0% 20% / 0.04);
@@ -249,6 +250,15 @@ input:focus, textarea:focus { outline: none; }
 
 .app-bottom-nav__item.is-active span {
   font-weight: 600;
+}
+
+.app-shell-floating-action {
+  position: fixed;
+  right: calc(100vw - var(--app-shell-bg-left) - var(--app-shell-bg-width) + 18px);
+  bottom: calc(
+    100dvh - var(--app-shell-bg-top) - var(--app-shell-bg-height) +
+    var(--app-shell-action-bottom, calc(96px + env(safe-area-inset-bottom)))
+  );
 }
 
 @media (min-width: 640px) {

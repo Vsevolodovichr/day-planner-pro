@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, GripVertical, MoreVertical } from 'lucide-react';
-import { useState, type HTMLAttributes } from 'react';
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Task } from '../types';
 import { taskText } from '../lib/task-utils';
@@ -42,7 +42,7 @@ export function TaskRow({
   onToggleSubtask,
   onEditSubtask,
   onDeleteSubtask,
-  dragHandleProps,
+  showDragHandle = false,
   variant = 'default',
   selected = false,
   subtaskTogglePlacement = 'inline',
@@ -54,7 +54,7 @@ export function TaskRow({
   onToggleSubtask?: (id: string) => void;
   onEditSubtask?: (id: string) => void;
   onDeleteSubtask?: (id: string) => void;
-  dragHandleProps?: HTMLAttributes<HTMLButtonElement>;
+  showDragHandle?: boolean;
   variant?: 'default' | 'list';
   selected?: boolean;
   subtaskTogglePlacement?: 'inline' | 'bottom-right';
@@ -93,26 +93,20 @@ export function TaskRow({
           position: 'relative',
         }}
       >
-        {dragHandleProps && (
-          <button
-            type="button"
-            {...dragHandleProps}
-            aria-label="Перетягнути"
+        {showDragHandle && (
+          <span
+            aria-hidden="true"
             style={{
-              border: 'none',
-              background: 'transparent',
-              padding: 0,
-              cursor: 'grab',
               color: 'var(--txt-dim)',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              touchAction: 'none',
-              ...(dragHandleProps.style ?? {}),
+              paddingTop: 2,
+              pointerEvents: 'none',
             }}
           >
             <GripVertical size={18} strokeWidth={1.8} />
-          </button>
+          </span>
         )}
         <button
           onClick={onToggle}

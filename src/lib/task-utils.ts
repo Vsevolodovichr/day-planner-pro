@@ -112,6 +112,33 @@ export function reorderGeneralTasks(tasks: Task[], orderedIds: string[]): Task[]
   });
 }
 
+export function folderTasksForPlanner(tasks: Task[], folderId: string): Task[] {
+  return tasks
+    .map((task, index) => ({ task, index }))
+    .filter(({ task }) => task.folderId === folderId)
+    .sort((a, b) => {
+      const orderA = typeof a.task.plannerOrder === 'number' ? a.task.plannerOrder : a.index;
+      const orderB = typeof b.task.plannerOrder === 'number' ? b.task.plannerOrder : b.index;
+      return orderA === orderB ? a.index - b.index : orderA - orderB;
+    })
+    .map(({ task }) => task);
+}
+
+export function reorderFolderTasks(
+  tasks: Task[],
+  folderId: string,
+  orderedIds: string[],
+): Task[] {
+  const ordered = new Map(orderedIds.map((id, index) => [id, index + 1]));
+  const folderTaskIds = new Set(folderTasksForPlanner(tasks, folderId).map((task) => task.id));
+
+  return tasks.map((task) => {
+    if (!folderTaskIds.has(task.id)) return task;
+    const plannerOrder = ordered.get(task.id);
+    return typeof plannerOrder === 'number' ? { ...task, plannerOrder } : task;
+  });
+}
+
 export function applyAutoMove(tasks: Task[], todayISO = toISO(new Date())): Task[] {
   let changed = false;
   const moved = tasks.map((task) => {

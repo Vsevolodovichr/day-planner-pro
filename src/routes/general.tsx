@@ -1,8 +1,24 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
 import {
-  ArrowDown,
-  ArrowUp,
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { useEffect, useState, type ReactNode } from 'react';
+import {
   Check,
   ChevronDown,
   ChevronRight,
@@ -15,18 +31,19 @@ import {
 import { AppShell } from '../components/AppShell';
 import { ContextActionSheet } from '../components/ContextActionSheet';
 import { SortableTaskList } from '../components/SortableTaskList';
-import { TaskRow } from '../components/TaskRow';
 import { useFolders, useTasks } from '../components/Hooks';
 import { uid } from '../lib/storage';
 import {
   cloneTask,
+  folderTasksForPlanner,
   generalTasksForPlanner,
   newSubtask,
+  reorderFolderTasks,
   reorderGeneralTasks,
   taskText,
   toggleTaskCompletion,
 } from '../lib/task-utils';
-import type { Task } from '../types';
+import type { Folder, Task } from '../types';
 
 export const Route = createFileRoute('/general')({ component: General });
 
@@ -41,6 +58,33 @@ function parseFolderIdList(raw: string | null): string[] {
   } catch {
     return [];
   }
+}
+
+function SortableFolderCard({ folder, children }: { folder: Folder; children: ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: folder.id,
+  });
+
+  return (
+    <section
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className="glass"
+      style={{
+        borderRadius: 18,
+        overflow: 'hidden',
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.72 : 1,
+        position: 'relative',
+        zIndex: isDragging ? 2 : undefined,
+        cursor: isDragging ? 'grabbing' : 'grab',
+      }}
+    >
+      {children}
+    </section>
+  );
 }
 
 function EditModal({
@@ -306,53 +350,6 @@ function SubtaskModal({
   );
 }
 
-function TaskCard({
-  task,
-  onToggle,
-  onSelect,
-  onMenu,
-  onToggleSub,
-  onSubEdit,
-  onSubDelete,
-  selected,
-}: {
-  task: Task;
-  onToggle: () => void;
-  onSelect: () => void;
-  onDelete: () => void;
-  onAddSubtask: () => void;
-  onToggleSub: (id: string) => void;
-  onMenu: () => void;
-  onSubEdit: (id: string) => void;
-  onSubCopy: (id: string) => void;
-  onSubDelete: (id: string) => void;
-  selected: boolean;
-}) {
-  return (
-    <section
-      className="glass"
-      style={{
-        borderRadius: 12,
-        overflow: 'hidden',
-        background: 'rgba(18,18,20,0.76)',
-      }}
-    >
-      <TaskRow
-        task={task}
-        variant="list"
-        selected={selected}
-        onToggle={onToggle}
-        onSelect={onSelect}
-        onMenu={onMenu}
-        onToggleSubtask={onToggleSub}
-        onEditSubtask={onSubEdit}
-        onDeleteSubtask={onSubDelete}
-        subtaskTogglePlacement="bottom-right"
-      />
-    </section>
-  );
-}
-
 function General() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<'tasks' | 'folders'>('tasks');
@@ -376,6 +373,12 @@ function General() {
   });
   const generalTasks = generalTasksForPlanner(tasks);
   const orderedFolders = [...folders].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const folderIds = orderedFolders.map((folder) => folder.id);
+  const folderSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 160, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined' || folders.length === 0) return;
@@ -446,13 +449,12 @@ function General() {
     }
   };
 
-  const moveFolder = (folderId: string, direction: -1 | 1) => {
-    const index = orderedFolders.findIndex((folder) => folder.id === folderId);
-    const nextIndex = index + direction;
-    if (index < 0 || nextIndex < 0 || nextIndex >= orderedFolders.length) return;
-    const nextFolders = [...orderedFolders];
-    [nextFolders[index], nextFolders[nextIndex]] = [nextFolders[nextIndex], nextFolders[index]];
-    saveFolders(nextFolders.map((folder, sortOrder) => ({ ...folder, sortOrder })));
+  const handleFolderDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    const oldIndex = folderIds.indexOf(String(active.id));
+    const newIndex = folderIds.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    saveFolders(arrayMove(orderedFolders, oldIndex, newIndex).map((folder, sortOrder) => ({ ...folder, sortOrder })));
   };
 
   const toggle = (id: string) =>
@@ -464,6 +466,10 @@ function General() {
 
   const reorderGeneralTaskList = (orderedIds: string[]) => {
     saveTasks(reorderGeneralTasks(tasks, orderedIds));
+  };
+
+  const reorderFolderTaskList = (folderId: string, orderedIds: string[]) => {
+    saveTasks(reorderFolderTasks(tasks, folderId, orderedIds));
   };
 
   const toggleSub = (taskId: string, subId: string) =>
@@ -598,6 +604,9 @@ function General() {
   };
 
   const totalDone = generalTasks.filter((t) => t.completed).length;
+  const stopFolderDragActivation = (event: { stopPropagation: () => void }) => {
+    event.stopPropagation();
+  };
 
   return (
     <AppShell>
@@ -698,14 +707,17 @@ function General() {
             }}
           />
         ) : tab === 'folders' && folders.length > 0 ? (
-          orderedFolders.map((folder, folderIndex) => {
+          <DndContext
+            sensors={folderSensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleFolderDragEnd}
+          >
+            <SortableContext items={folderIds} strategy={verticalListSortingStrategy}>
+              {orderedFolders.map((folder) => {
             const collapsed = !expandedFolderIds.includes(folder.id);
+            const folderTasks = folderTasksForPlanner(tasks, folder.id);
             return (
-            <section
-              key={folder.id}
-              className="glass"
-              style={{ borderRadius: 18, overflow: 'hidden' }}
-            >
+            <SortableFolderCard key={folder.id} folder={folder}>
               <div
                 style={{
                   display: 'flex',
@@ -717,6 +729,8 @@ function General() {
                 }}
               >
                 <button
+                  onMouseDown={stopFolderDragActivation}
+                  onTouchStart={stopFolderDragActivation}
                   onClick={() => toggleFolderCollapsed(folder.id)}
                   aria-label={collapsed ? 'Розгорнути папку' : 'Згорнути папку'}
                   style={{
@@ -750,46 +764,8 @@ function General() {
                   {folder.name}
                 </span>
                 <button
-                  onClick={() => moveFolder(folder.id, -1)}
-                  disabled={folderIndex === 0}
-                  aria-label="Підняти папку"
-                  style={{
-                    border: 'none',
-                    background: 'rgba(255,255,255,0.08)',
-                    color: 'var(--txt-muted)',
-                    width: 30,
-                    height: 30,
-                    borderRadius: 999,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: folderIndex === 0 ? 'default' : 'pointer',
-                    opacity: folderIndex === 0 ? 0.35 : 1,
-                  }}
-                >
-                  <ArrowUp size={14} />
-                </button>
-                <button
-                  onClick={() => moveFolder(folder.id, 1)}
-                  disabled={folderIndex === orderedFolders.length - 1}
-                  aria-label="Опустити папку"
-                  style={{
-                    border: 'none',
-                    background: 'rgba(255,255,255,0.08)',
-                    color: 'var(--txt-muted)',
-                    width: 30,
-                    height: 30,
-                    borderRadius: 999,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: folderIndex === orderedFolders.length - 1 ? 'default' : 'pointer',
-                    opacity: folderIndex === orderedFolders.length - 1 ? 0.35 : 1,
-                  }}
-                >
-                  <ArrowDown size={14} />
-                </button>
-                <button
+                  onMouseDown={stopFolderDragActivation}
+                  onTouchStart={stopFolderDragActivation}
                   onClick={() => addToFolder(folder.id)}
                   aria-label="Додати завдання"
                   style={{
@@ -808,6 +784,8 @@ function General() {
                   <Plus size={14} />
                 </button>
                 <button
+                  onMouseDown={stopFolderDragActivation}
+                  onTouchStart={stopFolderDragActivation}
                   onClick={() => setFolderModal({ id: folder.id, initialValue: folder.name })}
                   aria-label="Редагувати папку"
                   style={{
@@ -826,6 +804,8 @@ function General() {
                   <Pencil size={14} />
                 </button>
                 <button
+                  onMouseDown={stopFolderDragActivation}
+                  onTouchStart={stopFolderDragActivation}
                   onClick={() => {
                     if (window.confirm('Видалити папку?'))
                       saveFolders(folders.filter((f) => f.id !== folder.id));
@@ -846,27 +826,45 @@ function General() {
                   <Trash2 size={14} />
                 </button>
               </div>
-              {!collapsed && tasks
-                .filter((task) => task.folderId === folder.id)
-                .map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onToggle={() => toggle(task.id)}
-                    onSelect={() => select(task.id)}
-                    onDelete={() => remove(task.id)}
-                    onAddSubtask={() => addSubtask(task.id)}
-                    onToggleSub={(sid) => toggleSub(task.id, sid)}
-                    onMenu={() => setMenuFor(task.id)}
-                    onSubEdit={(sid) => subtaskAction(task.id, sid, 'edit')}
-                    onSubCopy={(sid) => subtaskAction(task.id, sid, 'copy')}
-                    onSubDelete={(sid) => subtaskAction(task.id, sid, 'delete')}
-                    selected={selection.includes(task.id)}
+              {!collapsed && folderTasks.length > 0 && (
+                <div
+                  onMouseDown={stopFolderDragActivation}
+                  onTouchStart={stopFolderDragActivation}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 3,
+                    paddingTop: 3,
+                  }}
+                >
+                  <SortableTaskList
+                    tasks={folderTasks}
+                    variant="list"
+                    selectedIds={selection}
+                    subtaskTogglePlacement="bottom-right"
+                    onToggle={toggle}
+                    onSelect={select}
+                    onMenu={(taskId) => setMenuFor(taskId)}
+                    onToggleSubtask={toggleSub}
+                    onEditSubtask={(taskId, subtaskId) => subtaskAction(taskId, subtaskId, 'edit')}
+                    onDeleteSubtask={(taskId, subtaskId) =>
+                      subtaskAction(taskId, subtaskId, 'delete')
+                    }
+                    onReorder={(orderedIds) => reorderFolderTaskList(folder.id, orderedIds)}
+                    itemClassName="glass"
+                    itemStyle={{
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      background: 'rgba(18,18,20,0.76)',
+                    }}
                   />
-                ))}
-            </section>
+                </div>
+              )}
+            </SortableFolderCard>
             );
-          })
+              })}
+            </SortableContext>
+          </DndContext>
         ) : (
           <div
             className="glass"
@@ -908,12 +906,10 @@ function General() {
 
       {/* FAB */}
       <button
+        className="app-shell-floating-action"
         onClick={add}
         aria-label="Створити"
         style={{
-          position: 'fixed',
-          bottom: 'var(--app-shell-action-bottom, calc(96px + env(safe-area-inset-bottom)))',
-          right: 18,
           width: 52,
           height: 52,
           borderRadius: 999,

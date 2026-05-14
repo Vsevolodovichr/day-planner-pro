@@ -198,12 +198,10 @@ function Notes() {
       {/* FAB */}
       {notes.length > 0 && (
         <button
+          className="app-shell-floating-action"
           onClick={() => navigate({ to: '/notes/$id', params: { id: 'new' } })}
           aria-label="Створити нотатку"
           style={{
-            position: 'fixed',
-            bottom: 'var(--app-shell-action-bottom, calc(96px + env(safe-area-inset-bottom)))',
-            right: 18,
             width: 52,
             height: 52,
             borderRadius: 999,

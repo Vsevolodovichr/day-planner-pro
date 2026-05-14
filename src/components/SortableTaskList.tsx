@@ -2,7 +2,8 @@ import {
   closestCenter,
   DndContext,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -56,6 +57,8 @@ function SortableTaskItem({
   return (
     <div
       ref={setNodeRef}
+      {...attributes}
+      {...listeners}
       className={itemClassName}
       style={{
         ...itemStyle,
@@ -64,6 +67,7 @@ function SortableTaskItem({
         opacity: isDragging ? 0.72 : 1,
         position: 'relative',
         zIndex: isDragging ? 2 : undefined,
+        cursor: isDragging ? 'grabbing' : 'grab',
       }}
     >
       <TaskRow
@@ -71,7 +75,7 @@ function SortableTaskItem({
         variant={variant}
         selected={selectedIds.includes(task.id)}
         subtaskTogglePlacement={subtaskTogglePlacement}
-        dragHandleProps={{ ...attributes, ...listeners }}
+        showDragHandle
         onToggle={() => onToggle(task.id)}
         onSelect={() => onSelect(task.id)}
         onMenu={onMenu ? () => onMenu(task.id) : undefined}
@@ -100,7 +104,8 @@ export function SortableTaskList({
 }: SortableTaskListProps) {
   const taskIds = tasks.map((task) => task.id);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 160, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 

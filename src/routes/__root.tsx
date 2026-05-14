@@ -10,7 +10,6 @@ import {
 
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/sonner';
-import appCss from '../fornastya.css?url';
 
 function NotFoundComponent() {
   return (
@@ -76,12 +75,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { property: 'og:type', content: 'website' },
       { name: 'twitter:card', content: 'summary' },
-    ],
-    links: [
-      {
-        rel: 'stylesheet',
-        href: appCss,
-      },
     ],
   }),
   component: RootComponent,

@@ -3,6 +3,33 @@
 @import 'tw-animate-css';
 
 @theme inline {
+  /* shadcn/ui-compatible tokens */
+  --color-background: var(--app-bg);
+  --color-foreground: var(--text-main);
+  --color-card-foreground: var(--text-main);
+  --color-popover: var(--card-dark);
+  --color-popover-foreground: var(--text-main);
+  --color-primary: var(--accent);
+  --color-primary-foreground: #1A1308;
+  --color-secondary: var(--card-soft);
+  --color-secondary-foreground: var(--text-main);
+  --color-muted: var(--card-soft);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent-foreground: #1A1308;
+  --color-destructive: #EF4444;
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: var(--border-soft);
+  --color-input: var(--glass-stroke);
+  --color-ring: var(--accent);
+
+  --color-sidebar: var(--card-dark);
+  --color-sidebar-foreground: var(--text-main);
+  --color-sidebar-accent: var(--accent-10);
+  --color-sidebar-accent-foreground: var(--gold-text-strong);
+  --color-sidebar-border: var(--border-soft);
+  --color-sidebar-ring: var(--accent);
+
+  /* App-specific tokens */
   --color-appBg: var(--app-bg);
   --color-topBar: var(--top-bar);
   --color-card: var(--card);
