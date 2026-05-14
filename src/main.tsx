@@ -6,8 +6,6 @@ import { getRouter } from './router';
 import './styles.css';
 import './fornastya.css';
 
-const PWA_UPDATE_CHECK_INTERVAL_MS = 60_000;
-
 const router = getRouter();
 const root = document.getElementById('root');
 
@@ -21,14 +19,6 @@ const updateServiceWorker = registerSW({
     window.dispatchEvent(
       new CustomEvent('pwa:update-ready', { detail: { updateServiceWorker } }),
     );
-  },
-  onRegisteredSW(_swUrl, registration) {
-    if (!registration) return;
-
-    window.setInterval(() => {
-      if (!navigator.onLine) return;
-      void registration.update();
-    }, PWA_UPDATE_CHECK_INTERVAL_MS);
   },
 });
 

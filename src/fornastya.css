@@ -72,25 +72,25 @@
   --hairline: rgba(255,255,255,0.06);
 
   /* App background */
-  --bg-app: radial-gradient(120% 80% at 50% 0%, #0A0A0C 0%, #000 70%);
+  --bg-app: radial-gradient(120% 80% at 50% 0%, #090909 0%, #000 70%);
   --bg-image: url('/app-background.png');
 
   /* Legacy aliases — keep old components working */
   --app-bg: #000;
   --top-bar: rgba(255,255,255,0.05);
-  --card: rgba(255,255,255,0.05);
-  --card-soft: rgba(255,255,255,0.05);
-  --card-dark: #0A0A0C;
-  --date-panel: rgba(255,255,255,0.03);
+  --card: rgba(0, 0, 0, 0.8);
+  --card-soft: rgba(33, 33, 33, 0.403);
+  --card-dark: #0e0e0e;
+  --date-panel: rgba(0, 0, 0, 0.114);
   --date-panel-active: var(--gold-shine);
-  --border-soft: hsla(0 0% 20% / 0.4);
+  --border-soft: hsla(0, 0%, 30%, 0.4);
   --text-main: #F4F5F7;
   --text-muted: rgba(244,245,247,0.62);
   --text-dim: rgba(244,245,247,0.42);
   --accent: #E5C26A;
   --accent-strong: #F8DC8A;
   --accent-dark: #7B5A1F;
-  --progress-bg: rgba(255,255,255,0.10);
+  --progress-bg: rgba(255, 255, 255, 0.171);
   --warning-star: #F8DC8A;
   --ios-blue: #0A84FF;
 }
@@ -106,6 +106,9 @@ body,
   -webkit-font-smoothing: antialiased;
   margin: 0;
   min-height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 * { box-sizing: border-box; }
@@ -120,8 +123,6 @@ input:focus, textarea:focus { outline: none; }
 /* Glass surface utility */
 .glass {
   background: linear-gradient(180deg, var(--glass-a) 30%, var(--glass-b) 10%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
   border: 1px solid var(--glass-stroke);
 }
 
@@ -147,6 +148,23 @@ input:focus, textarea:focus { outline: none; }
   background-attachment: fixed, fixed, fixed;
   isolation: isolate;
   position: relative;
+  height: 100dvh;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.app-shell-root,
+.app-shell-main {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.app-shell-root {
+  overflow: hidden;
+}
+
+.app-shell-main {
+  overscroll-behavior: contain;
 }
 
 .fornastya-phone::before,
@@ -197,7 +215,7 @@ input:focus, textarea:focus { outline: none; }
   display: flex;
   align-items: stretch;
   transform: translateX(-50%);
-  background: linear-gradient(180deg, hsla(0 0% 20% / 0.125), 0%, hsla(0 0% 20% / 0.125) 20%);
+  background: linear-gradient(180deg, hsla(0 0% 5%/ 0.95) 0%, hsla(0 0% 0%) 20%);
 }
 
 .app-bottom-nav__item {
@@ -258,12 +276,18 @@ input:focus, textarea:focus { outline: none; }
     --app-shell-bg-height: calc(100dvh - 48px);
     width: min(calc(100% - 48px), 1180px);
     max-width: 1180px;
+    height: calc(100dvh - 48px);
     min-height: calc(100dvh - 48px);
     overflow: hidden;
   }
 
   .fornastya-phone.has-toolbar .app-shell-main {
     padding-right: 24px;
+  }
+
+  .home-screen {
+    padding-left: 76px;
+    padding-right: 76px;
   }
 
   .app-bottom-nav {

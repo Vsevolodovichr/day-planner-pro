@@ -60,8 +60,7 @@ function NoteEditor() {
           justifyContent: 'space-between',
           padding: '14px',
           background: 'linear-gradient(180deg, rgba(0,0,0,0.85) 70%, transparent 100%)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
+
         }}
       >
         <button onClick={() => navigate({ to: '/notes' })} style={topBtn} aria-label="Назад">
@@ -119,7 +118,6 @@ function NoteEditor() {
             autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => existing && void persist()}
             placeholder="Назва"
             style={{
               width: '100%',
@@ -136,7 +134,6 @@ function NoteEditor() {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onBlur={() => existing && void persist()}
             placeholder="Текст…"
             rows={16}
             style={{

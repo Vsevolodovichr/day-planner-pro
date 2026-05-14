@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, type TouchEvent } from 'react';
 import { AppShell } from '../components/AppShell';
 import { DayCard } from '../components/DayCard';
 import { ContextActionSheet } from '../components/ContextActionSheet';
@@ -259,7 +259,8 @@ export function Home() {
     initialValue?: string;
   } | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const weekTouchStart = useRef<{ x: number; y: number } | null>(null);
+  const isHorizontalWeekSwipe = useRef(false);
 
   const today = new Date();
   const todayTasks = tasksForDate(tasks, todayISO);
@@ -271,6 +272,50 @@ export function Home() {
     const next = new Date(selectedDate);
     next.setDate(next.getDate() + delta * 7);
     setSelectedDate(toISO(next));
+  };
+
+  const handleWeekTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+    weekTouchStart.current = { x: touch.clientX, y: touch.clientY };
+    isHorizontalWeekSwipe.current = false;
+  };
+
+  const handleWeekTouchMove = (event: TouchEvent<HTMLDivElement>) => {
+    const start = weekTouchStart.current;
+    const touch = event.touches[0];
+    if (!start || !touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (!isHorizontalWeekSwipe.current && absX > 14 && absX > absY * 1.2) {
+      isHorizontalWeekSwipe.current = true;
+    }
+
+    if (isHorizontalWeekSwipe.current && event.cancelable) {
+      event.preventDefault();
+    }
+  };
+
+  const handleWeekTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    const start = weekTouchStart.current;
+    const touch = event.changedTouches[0];
+    if (!start || !touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (absX > 60 && absX > absY * 1.2) {
+      shiftWeek(deltaX > 0 ? -1 : 1);
+    }
+
+    weekTouchStart.current = null;
+    isHorizontalWeekSwipe.current = false;
   };
 
   const toggle = (id: string) =>
@@ -404,15 +449,13 @@ export function Home() {
   return (
     <AppShell>
       <div
-        onTouchStart={(event) => setTouchStart(event.touches[0]?.clientX ?? null)}
-        onTouchEnd={(event) => {
-          if (touchStart === null) return;
-          const delta = event.changedTouches[0]?.clientX - touchStart;
-          if (delta > 60) shiftWeek(-1);
-          if (delta < -60) shiftWeek(1);
-          setTouchStart(null);
+        className="home-screen"
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: '100%',
+          overflowX: 'hidden',
         }}
-        style={{ position: 'relative' }}
       >
         {/* Hero */}
         <div style={{ padding: '24px 18px 10px' }}>
@@ -544,7 +587,7 @@ export function Home() {
           className="hidden lg:flex"
           style={{
             position: 'absolute',
-            left: -56,
+            left: 18,
             top: '50%',
             width: 44,
             height: 44,
@@ -552,8 +595,11 @@ export function Home() {
             alignItems: 'center',
             justifyContent: 'center',
             color: 'var(--gold-text-strong)',
-            background: 'var(--accent-08)',
-            border: '1px solid var(--accent-25)',
+            background: 'rgba(0,0,0,0.72)',
+            border: '1px solid var(--accent-45)',
+            boxShadow: '0 12px 30px rgba(0,0,0,0.35)',
+            zIndex: 20,
+            cursor: 'pointer',
           }}
         >
           <ChevronLeft size={22} />
@@ -565,7 +611,7 @@ export function Home() {
           className="hidden lg:flex"
           style={{
             position: 'absolute',
-            right: -56,
+            right: 18,
             top: '50%',
             width: 44,
             height: 44,
@@ -573,8 +619,11 @@ export function Home() {
             alignItems: 'center',
             justifyContent: 'center',
             color: 'var(--gold-text-strong)',
-            background: 'var(--accent-08)',
-            border: '1px solid var(--accent-25)',
+            background: 'rgba(0,0,0,0.72)',
+            border: '1px solid var(--accent-45)',
+            boxShadow: '0 12px 30px rgba(0,0,0,0.35)',
+            zIndex: 20,
+            cursor: 'pointer',
           }}
         >
           <ChevronRight size={22} />
@@ -582,11 +631,20 @@ export function Home() {
 
         {/* Week cards — 3px gap */}
         <div
+          onTouchStart={handleWeekTouchStart}
+          onTouchMove={handleWeekTouchMove}
+          onTouchEnd={handleWeekTouchEnd}
+          onTouchCancel={() => {
+            weekTouchStart.current = null;
+            isHorizontalWeekSwipe.current = false;
+          }}
           style={{
             padding: '4px 12px 12px',
             display: 'flex',
             flexDirection: 'column',
             gap: 3,
+            touchAction: 'pan-y',
+            overscrollBehavior: 'contain',
           }}
         >
           {week.map((iso, index) => (

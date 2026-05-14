@@ -192,15 +192,6 @@ function NotifSettings() {
             }
           />
           <Divider />
-          <SRow
-            icon={<Music2 size={16} color="var(--gold-text)" />}
-            label="Мелодія"
-            right={
-              <span style={{ fontSize: 14, color: 'var(--gold-text-strong)', fontWeight: 500 }}>
-                {s.melody}
-              </span>
-            }
-          />
         </section>
       </div>
     </AppShell>

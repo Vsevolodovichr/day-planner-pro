@@ -15,7 +15,7 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-const PWA_LOGIN_UPDATE_DELAY_MS = 25_000;
+const PWA_LOGGED_OUT_UPDATE_DELAY_MS = 25_000;
 const PWA_UPDATE_TOAST_ID = 'pwa-update-ready';
 
 type UpdateServiceWorker = (reloadPage?: boolean) => Promise<void>;
@@ -41,7 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [pendingPwaUpdate, setPendingPwaUpdate] = useState<UpdateServiceWorker | null>(null);
-  const [delayPwaUpdateUntilLogin, setDelayPwaUpdateUntilLogin] = useState(false);
 
   const reloadUser = useCallback(async () => {
     if (!getStoredAccessToken()) {
@@ -81,22 +80,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!pendingPwaUpdate || loading) return;
 
-    if (!user) {
-      if (!delayPwaUpdateUntilLogin) setDelayPwaUpdateUntilLogin(true);
-      return;
-    }
-
-    const timeoutId = window.setTimeout(
-      () => {
-        showPwaUpdatePrompt(pendingPwaUpdate);
-        setPendingPwaUpdate(null);
-        setDelayPwaUpdateUntilLogin(false);
-      },
-      delayPwaUpdateUntilLogin ? PWA_LOGIN_UPDATE_DELAY_MS : 0,
-    );
+    const timeoutId = window.setTimeout(() => {
+      showPwaUpdatePrompt(pendingPwaUpdate);
+      setPendingPwaUpdate(null);
+    }, user ? 0 : PWA_LOGGED_OUT_UPDATE_DELAY_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [delayPwaUpdateUntilLogin, loading, pendingPwaUpdate, user]);
+  }, [loading, pendingPwaUpdate, user]);
 
   const signIn = useCallback(
     async (email: string, password: string) => {

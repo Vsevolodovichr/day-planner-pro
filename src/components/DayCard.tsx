@@ -7,8 +7,8 @@ import { SortableTaskList } from './SortableTaskList';
 
 function ProgressRing({
   value = 0,
-  size = 28,
-  stroke = 2.5,
+  size = 38,
+  stroke = 3.5,
 }: {
   value?: number;
   size?: number;
@@ -29,7 +29,7 @@ function ProgressRing({
         cx={size / 2}
         cy={size / 2}
         r={r}
-        stroke="rgba(255,255,255,0.10)"
+        stroke="rgba(200, 200, 200, 0.23)"
         strokeWidth={stroke}
         fill="none"
       />
@@ -112,7 +112,7 @@ export function DayCard({
         style={{
           width: '100%',
           border: 'none',
-          background: 'transparent',
+          background: 'var(--card)',
           display: 'flex',
           alignItems: 'stretch',
           gap: 0,
@@ -234,10 +234,11 @@ export function DayCard({
             role="button"
             aria-label="Додати завдання"
             style={{
-              width: 26,
-              height: 26,
+              width: 40,
+              height: 40,
               borderRadius: '50%',
-              background: 'var(--accent-10)',
+              border: 'var(--accent-45) 1px solid',
+              background: 'linear-gradient(135deg, var(--accent-18) 10%, var(--accent-06) 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -245,7 +246,7 @@ export function DayCard({
               cursor: 'pointer',
             }}
           >
-            <Plus size={15} />
+            <Plus size={20} style={{ stroke: 'var(--text-main)' }} />
           </span>
         </div>
       </button>

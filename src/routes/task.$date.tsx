@@ -142,8 +142,6 @@ function TaskEditor() {
           justifyContent: 'space-between',
           padding: '14px',
           background: 'linear-gradient(180deg, rgba(0,0,0,0.85) 70%, transparent 100%)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
         }}
       >
         <button onClick={() => navigate({ to: '/' })} style={topBtn} aria-label="Назад">

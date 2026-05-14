@@ -1,10 +1,10 @@
 import { Link, useLocation } from '@tanstack/react-router';
-import { ListChecks, Folder, FileText, CalendarDays, Settings } from 'lucide-react';
+import { ListChecks, Folder, FileText, ClipboardPen, CalendarDays, Settings, BookOpen } from 'lucide-react';
 
 const items = [
   { to: '/', Icon: ListChecks, label: 'Головна' },
-  { to: '/general', Icon: Folder, label: 'Завдання' },
-  { to: '/notes', Icon: FileText, label: 'Нотатки' },
+  { to: '/general', Icon: BookOpen, label: 'Завдання' },
+  { to: '/notes', Icon: ClipboardPen, label: 'Нотатки' },
   { to: '/calendar', Icon: CalendarDays, label: 'Календар' },
   { to: '/settings/notifications', Icon: Settings, label: 'Налаштування' },
 ] as const;
@@ -24,8 +24,8 @@ export function BottomNav() {
             aria-label={label}
             className={`app-bottom-nav__item${active ? ' is-active' : ''}`}
           >
-            <Icon size={24} strokeWidth={active ? 2 : 1.6} />
-            <span>{label}</span>
+            <Icon size={36} strokeWidth={active ? 1.2 : 1.0} />
+
           </Link>
         );
       })}
