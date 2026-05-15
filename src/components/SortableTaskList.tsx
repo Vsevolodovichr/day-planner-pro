@@ -86,6 +86,8 @@ function SortableTaskItem({
         position: 'relative',
         zIndex: isDragging ? 2 : undefined,
         cursor: isDragging ? 'grabbing' : 'grab',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
       }}
     >
       <TaskRow
