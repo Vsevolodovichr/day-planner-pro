@@ -62,7 +62,15 @@ function SortableTaskItem({
   itemClassName,
   itemStyle,
 }: Omit<SortableTaskListProps, 'tasks' | 'onReorder'> & { task: Task }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: task.id,
   });
 
@@ -85,9 +93,9 @@ function SortableTaskItem({
         variant={variant}
         selected={selectedIds.includes(task.id)}
         subtaskTogglePlacement={subtaskTogglePlacement}
-        showDragHandle
-        dragHandleAttributes={attributes}
-        dragHandleListeners={listeners}
+        dragActivatorRef={setActivatorNodeRef}
+        dragActivatorAttributes={attributes}
+        dragActivatorListeners={listeners}
         onToggle={() => onToggle(task.id)}
         onSelect={() => onSelect(task.id)}
         onMenu={onMenu ? () => onMenu(task.id) : undefined}

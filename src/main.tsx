@@ -13,7 +13,8 @@ let pwaUpdateListenersAttached = false;
 
 function syncKeyboardOffset() {
   const visualViewport = window.visualViewport;
-  const offset = visualViewport
+  const tracksMobileKeyboard = window.matchMedia('(max-width: 1023px)').matches;
+  const offset = visualViewport && tracksMobileKeyboard
     ? Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop)
     : 0;
 

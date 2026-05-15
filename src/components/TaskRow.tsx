@@ -1,7 +1,6 @@
 import {
   ArrowRightLeft,
   Copy,
-  GripVertical,
   ListPlus,
   Pencil,
   Send,
@@ -111,11 +110,17 @@ function SwipeableTaskCard({
   id,
   swipeLeftActions,
   swipeRightActions,
+  dragActivatorRef,
+  dragActivatorAttributes,
+  dragActivatorListeners,
   children,
 }: {
   id: string;
   swipeLeftActions: SwipeAction[];
   swipeRightActions: SwipeAction[];
+  dragActivatorRef?: (node: HTMLDivElement | null) => void;
+  dragActivatorAttributes?: HTMLAttributes<HTMLDivElement>;
+  dragActivatorListeners?: HTMLAttributes<HTMLDivElement>;
   children: ReactNode;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -351,6 +356,9 @@ function SwipeableTaskCard({
         {renderActions(swipeLeftActions, 'right', rightRevealedWidth, rightProgress)}
       </div>
       <div
+        ref={dragActivatorRef}
+        {...dragActivatorAttributes}
+        {...dragActivatorListeners}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerEnd}
@@ -425,9 +433,9 @@ export function TaskRow({
   onSend,
   onDelete,
   onCopy,
-  showDragHandle = false,
-  dragHandleAttributes,
-  dragHandleListeners,
+  dragActivatorRef,
+  dragActivatorAttributes,
+  dragActivatorListeners,
   variant = 'default',
   selected = false,
 }: {
@@ -444,9 +452,9 @@ export function TaskRow({
   onSend?: () => void;
   onDelete?: () => void;
   onCopy?: () => void;
-  showDragHandle?: boolean;
-  dragHandleAttributes?: HTMLAttributes<HTMLSpanElement>;
-  dragHandleListeners?: HTMLAttributes<HTMLSpanElement>;
+  dragActivatorRef?: (node: HTMLDivElement | null) => void;
+  dragActivatorAttributes?: HTMLAttributes<HTMLDivElement>;
+  dragActivatorListeners?: HTMLAttributes<HTMLDivElement>;
   variant?: 'default' | 'list';
   selected?: boolean;
   subtaskTogglePlacement?: 'inline' | 'bottom-right';
@@ -484,6 +492,9 @@ export function TaskRow({
         id={`task-${task.id}`}
         swipeLeftActions={swipeLeftActions}
         swipeRightActions={swipeRightActions}
+        dragActivatorRef={dragActivatorRef}
+        dragActivatorAttributes={dragActivatorAttributes}
+        dragActivatorListeners={dragActivatorListeners}
       >
         <div
         onClick={() => {
@@ -515,8 +526,7 @@ export function TaskRow({
           <Checkbox checked={checked} />
         </button>
 
-        <button
-          type="button"
+        <div
           style={{
             flex: 1,
             minWidth: 0,
@@ -542,7 +552,7 @@ export function TaskRow({
           >
             {text}
           </div>
-        </button>
+        </div>
 
         {task.time && (
           <span
@@ -555,32 +565,6 @@ export function TaskRow({
             }}
           >
             {task.time}
-          </span>
-        )}
-
-        {showDragHandle && (
-          <span
-            {...dragHandleAttributes}
-            {...dragHandleListeners}
-            data-task-drag-handle="true"
-            aria-label="Перетягнути"
-            role="button"
-            tabIndex={0}
-            onClick={(event) => event.stopPropagation()}
-            style={{
-              width: 30,
-              height: 34,
-              borderRadius: 10,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--txt-dim)',
-              cursor: 'grab',
-              flexShrink: 0,
-              touchAction: 'none',
-            }}
-          >
-            <GripVertical size={16} />
           </span>
         )}
 

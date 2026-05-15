@@ -353,7 +353,7 @@ textarea:focus {
   }
 
   .app-bottom-nav {
-    bottom: calc(24px + var(--kb-offset, 0px));
+    bottom: 24px;
     width: min(calc(100% - 96px), 640px);
     max-width: 640px;
     padding: 12px 10px;
