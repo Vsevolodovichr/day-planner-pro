@@ -230,7 +230,7 @@ function TaskEditor() {
       <div
         style={{
           position: 'fixed',
-          top: 'var(--app-shell-bg-top, 0px)',
+          top: 'calc(var(--app-shell-bg-top, 0px) + var(--vv-offset-top, 0px))',
           left: 'var(--app-shell-bg-left, 0px)',
           width: 'var(--app-shell-bg-width, 100vw)',
           boxSizing: 'border-box',

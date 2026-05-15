@@ -17,8 +17,10 @@ function syncKeyboardOffset() {
   const offset = visualViewport && tracksMobileKeyboard
     ? Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop)
     : 0;
+  const topOffset = visualViewport && tracksMobileKeyboard ? Math.max(0, visualViewport.offsetTop) : 0;
 
   document.documentElement.style.setProperty('--kb-offset', `${Math.round(offset)}px`);
+  document.documentElement.style.setProperty('--vv-offset-top', `${Math.round(topOffset)}px`);
 }
 
 function attachKeyboardOffsetSync() {
