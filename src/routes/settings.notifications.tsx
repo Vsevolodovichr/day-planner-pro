@@ -1,7 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { Bell, Palette, Clock, Music2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { AppShell } from '../components/AppShell';
+import {
+  getMotionPermissionState,
+  requestMotionPermission,
+  type MotionPermissionState,
+} from '../lib/motionPermission';
 import { storage } from '../lib/storage';
 import { applyAccent, getGoldPresets, loadAccent, saveAccent } from '../lib/theme';
 import type { NotificationSettings } from '../types';
@@ -10,6 +16,7 @@ export const Route = createFileRoute('/settings/notifications')({ component: Not
 
 function NotifSettings() {
   const [accentColor, setAccentColor] = useState<string>(loadAccent());
+  const [motionPermission, setMotionPermission] = useState<MotionPermissionState>('prompt');
   const [s, setS] = useState<NotificationSettings>({
     enabled: false,
     silent: true,
@@ -21,6 +28,10 @@ function NotifSettings() {
     applyAccent(accentColor);
     setS(storage.getNotif());
   }, [accentColor]);
+
+  useEffect(() => {
+    setMotionPermission(getMotionPermissionState());
+  }, []);
 
   const presets = getGoldPresets();
 
@@ -34,6 +45,23 @@ function NotifSettings() {
     setS(next);
     storage.setNotif(next);
   };
+
+  const requestAngelMotion = async () => {
+    const next = await requestMotionPermission();
+    setMotionPermission(next);
+    if (next === 'granted') toast.success('Рух увімкнено');
+    if (next === 'denied') toast.error('Дозвіл не надано');
+    if (next === 'unsupported') toast.error('На цьому пристрої рух недоступний');
+  };
+
+  const motionStatus =
+    motionPermission === 'granted'
+      ? 'Увімкнено'
+      : motionPermission === 'denied'
+        ? 'Дозвіл не надано'
+        : motionPermission === 'unsupported'
+          ? 'Недоступно на цьому пристрої'
+          : 'Дозвіл для нахилу ангела на iPhone';
 
   return (
     <AppShell>
@@ -141,6 +169,29 @@ function NotifSettings() {
           </div>
         </section>
 
+        {/* Angel motion */}
+        <section
+          className="glass"
+          style={{
+            borderRadius: 22,
+            padding: '4px 16px',
+          }}
+        >
+          <SRow
+            icon={<Music2 size={16} color="var(--gold-text)" />}
+            label="Рух ангела"
+            sublabel={motionStatus}
+            right={
+              <Toggle
+                checked={motionPermission === 'granted'}
+                disabled={motionPermission === 'granted' || motionPermission === 'unsupported'}
+                onChange={requestAngelMotion}
+                ariaLabel="Рух Ангела"
+              />
+            }
+          />
+        </section>
+
         {/* Notifications group */}
         <section
           className="glass"
@@ -244,9 +295,20 @@ function SRow({
   );
 }
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({
+  checked,
+  disabled,
+  ariaLabel,
+  onChange,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  ariaLabel?: string;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <button
+      disabled={disabled}
       onClick={() => onChange(!checked)}
       style={{
         width: 51,
@@ -254,11 +316,13 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
         borderRadius: 999,
         border: 'none',
         padding: 0,
-        cursor: 'pointer',
+        cursor: disabled ? 'default' : 'pointer',
         background: checked ? 'var(--gold-grad)' : 'rgba(255,255,255,0.12)',
+        opacity: disabled ? 0.72 : 1,
         position: 'relative',
         transition: 'background 0.2s',
       }}
+      aria-label={ariaLabel}
       aria-pressed={checked}
     >
       <span

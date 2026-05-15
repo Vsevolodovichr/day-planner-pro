@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { UA_DAYS_FULL, UA_MONTHS, toISO } from '../lib/date';
+import { getMotionPermissionState } from '../lib/motionPermission';
 import { useTasks } from './Hooks';
 
 type ModeId = 'calm' | 'focus' | 'motion' | 'silence' | 'night' | 'recovery';
@@ -46,10 +47,6 @@ function resolveModeByDay(date: Date, taskCount: number): ModeId {
   return 'calm';
 }
 
-type DOEStatic = {
-  requestPermission?: () => Promise<'granted' | 'denied' | 'default'>;
-};
-
 export function LivingDaySphere() {
   const rootRef = useRef<HTMLDivElement>(null);
   const { tasks } = useTasks();
@@ -57,13 +54,7 @@ export function LivingDaySphere() {
   const [motionEnabled, setMotionEnabled] = useState(false);
 
   useEffect(() => {
-    const DOE = (window as Window & { DeviceOrientationEvent?: DOEStatic }).DeviceOrientationEvent;
-    if (!DOE) return;
-    if (typeof DOE.requestPermission === 'function') {
-      return;
-    } else {
-      setMotionEnabled(true);
-    }
+    setMotionEnabled(getMotionPermissionState() === 'granted');
   }, []);
 
   useEffect(() => {
@@ -157,8 +148,8 @@ export function LivingDaySphere() {
       <div className="lds-content">
         <div className="lds-text">
           <div className="lds-date">
-            <span>{weekdayLabel},</span>
-            <span>{monthDayLabel}</span>
+            <span className="lds-date-main">{monthDayLabel}</span>
+            <span className="lds-date-weekday">{weekdayLabel}</span>
           </div>
         </div>
         <div className="lds-angel-stage" data-mode={mode} aria-hidden="true">
@@ -239,6 +230,13 @@ const LDS_STYLES = `
 }
 .lds-date span {
   display: block;
+}
+.lds-date-weekday {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(235, 209, 147, 0.58);
+  -webkit-text-fill-color: rgba(235, 209, 147, 0.58);
 }
 
 .lds-angel-stage {
@@ -459,18 +457,21 @@ const LDS_STYLES = `
 }
 
 @media (max-width: 520px) {
-  .living-day-sphere { padding: 16px; }
+  .living-day-sphere {
+    padding: 12px 14px;
+    border-radius: 22px;
+  }
   .lds-content {
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
   .lds-text {
     flex: 1 1 0;
   }
   .lds-angel-stage {
     align-self: center;
-    width: clamp(118px, 35vw, 142px);
-    height: clamp(106px, 31vw, 128px);
+    width: clamp(98px, 31vw, 124px);
+    height: clamp(88px, 28vw, 112px);
   }
 }
 
