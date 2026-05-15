@@ -303,12 +303,10 @@ async function syncSubtasks(taskId: string, subtasks: Task[]): Promise<void> {
       .map((subtask) => deleteSubtask(taskId, subtask.id)),
   );
   await Promise.all(
-    subtasks
-      .slice(0, 4)
-      .map((subtask) =>
-        currentIds.has(subtask.id)
-          ? updateSubtask(taskId, subtask)
-          : createSubtask(taskId, subtask),
-      ),
+    subtasks.map((subtask) =>
+      currentIds.has(subtask.id)
+        ? updateSubtask(taskId, subtask)
+        : createSubtask(taskId, subtask),
+    ),
   );
 }

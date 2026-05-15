@@ -31,6 +31,12 @@ type SortableTaskListProps = {
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   onEditSubtask?: (taskId: string, subtaskId: string) => void;
   onDeleteSubtask?: (taskId: string, subtaskId: string) => void;
+  onAddSubtask?: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onTransfer?: (id: string) => void;
+  onSend?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onCopy?: (id: string) => void;
   onReorder?: (orderedIds: string[]) => void;
   itemClassName?: string;
   itemStyle?: CSSProperties;
@@ -47,6 +53,12 @@ function SortableTaskItem({
   onToggleSubtask,
   onEditSubtask,
   onDeleteSubtask,
+  onAddSubtask,
+  onEdit,
+  onTransfer,
+  onSend,
+  onDelete,
+  onCopy,
   itemClassName,
   itemStyle,
 }: Omit<SortableTaskListProps, 'tasks' | 'onReorder'> & { task: Task }) {
@@ -57,8 +69,6 @@ function SortableTaskItem({
   return (
     <div
       ref={setNodeRef}
-      {...attributes}
-      {...listeners}
       className={itemClassName}
       style={{
         ...itemStyle,
@@ -76,12 +86,20 @@ function SortableTaskItem({
         selected={selectedIds.includes(task.id)}
         subtaskTogglePlacement={subtaskTogglePlacement}
         showDragHandle
+        dragHandleAttributes={attributes}
+        dragHandleListeners={listeners}
         onToggle={() => onToggle(task.id)}
         onSelect={() => onSelect(task.id)}
         onMenu={onMenu ? () => onMenu(task.id) : undefined}
         onToggleSubtask={(subtaskId) => onToggleSubtask?.(task.id, subtaskId)}
         onEditSubtask={(subtaskId) => onEditSubtask?.(task.id, subtaskId)}
         onDeleteSubtask={(subtaskId) => onDeleteSubtask?.(task.id, subtaskId)}
+        onAddSubtask={onAddSubtask ? () => onAddSubtask(task.id) : undefined}
+        onEdit={onEdit ? () => onEdit(task.id) : undefined}
+        onTransfer={onTransfer ? () => onTransfer(task.id) : undefined}
+        onSend={onSend ? () => onSend(task.id) : undefined}
+        onDelete={onDelete ? () => onDelete(task.id) : undefined}
+        onCopy={onCopy ? () => onCopy(task.id) : undefined}
       />
     </div>
   );
@@ -98,6 +116,12 @@ export function SortableTaskList({
   onToggleSubtask,
   onEditSubtask,
   onDeleteSubtask,
+  onAddSubtask,
+  onEdit,
+  onTransfer,
+  onSend,
+  onDelete,
+  onCopy,
   onReorder,
   itemClassName,
   itemStyle,
@@ -122,6 +146,12 @@ export function SortableTaskList({
         onToggleSubtask={(subtaskId) => onToggleSubtask?.(task.id, subtaskId)}
         onEditSubtask={(subtaskId) => onEditSubtask?.(task.id, subtaskId)}
         onDeleteSubtask={(subtaskId) => onDeleteSubtask?.(task.id, subtaskId)}
+        onAddSubtask={onAddSubtask ? () => onAddSubtask(task.id) : undefined}
+        onEdit={onEdit ? () => onEdit(task.id) : undefined}
+        onTransfer={onTransfer ? () => onTransfer(task.id) : undefined}
+        onSend={onSend ? () => onSend(task.id) : undefined}
+        onDelete={onDelete ? () => onDelete(task.id) : undefined}
+        onCopy={onCopy ? () => onCopy(task.id) : undefined}
       />
     </div>
   );
@@ -152,6 +182,12 @@ export function SortableTaskList({
             onToggleSubtask={onToggleSubtask}
             onEditSubtask={onEditSubtask}
             onDeleteSubtask={onDeleteSubtask}
+            onAddSubtask={onAddSubtask}
+            onEdit={onEdit}
+            onTransfer={onTransfer}
+            onSend={onSend}
+            onDelete={onDelete}
+            onCopy={onCopy}
             itemClassName={itemClassName}
             itemStyle={itemStyle}
           />

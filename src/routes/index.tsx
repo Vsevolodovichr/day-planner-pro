@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo, useRef, useState, type TouchEvent } from 'react';
+import { toast } from 'sonner';
 import { AppShell } from '../components/AppShell';
 import { DayCard } from '../components/DayCard';
 import { ContextActionSheet } from '../components/ContextActionSheet';
 import { useTasks, useUnreadNotifications } from '../components/Hooks';
 import { getWeekDates, toISO, UA_DAYS_FULL, UA_MONTHS } from '../lib/date';
 import {
-  cloneTask,
   completedDayStreak,
   newSubtask,
   reorderTasksForDate,
@@ -275,6 +275,14 @@ export function Home() {
   };
 
   const handleWeekTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    if (
+      event.target instanceof Element &&
+      event.target.closest('[data-task-swipe-root="true"]')
+    ) {
+      weekTouchStart.current = null;
+      isHorizontalWeekSwipe.current = false;
+      return;
+    }
     const touch = event.touches[0];
     if (!touch) return;
     weekTouchStart.current = { x: touch.clientX, y: touch.clientY };
@@ -329,11 +337,24 @@ export function Home() {
 
   const action = (k: string, ids = selection) => {
     if (k === 'delete') {
+      if (!window.confirm('Видалити завдання?')) return;
       save(tasks.filter((t) => !ids.includes(t.id)));
       setSelection([]);
     } else if (k === 'copy') {
-      const dup = tasks.filter((t) => ids.includes(t.id)).map((t) => cloneTask(t));
-      save([...tasks, ...dup]);
+      const text = tasks
+        .filter((t) => ids.includes(t.id))
+        .map(taskText)
+        .join('\n\n');
+      if (text) {
+        if (navigator.clipboard) {
+          void navigator.clipboard
+            .writeText(text)
+            .then(() => toast.success('Скопійовано'))
+            .catch(() => toast.error('Не вдалося скопіювати'));
+        } else {
+          toast.error('Буфер обміну недоступний');
+        }
+      }
       setSelection([]);
     } else if (k === 'edit' && ids.length === 1) {
       const task = tasks.find((t) => t.id === ids[0]);
@@ -375,7 +396,6 @@ export function Home() {
             ),
           };
         }
-        if (task.subtasks.length >= 4) return task;
         return { ...task, subtasks: [...task.subtasks, newSubtask(value)] };
       }),
     );
@@ -658,6 +678,12 @@ export function Home() {
               onToggleSubtask={toggleSubtask}
               onEditSubtask={editSubtask}
               onDeleteSubtask={deleteSubtask}
+              onAddSubtask={(taskId) => action('subtask', [taskId])}
+              onEdit={(taskId) => action('edit', [taskId])}
+              onTransfer={(taskId) => action('transfer', [taskId])}
+              onSend={(taskId) => action('send', [taskId])}
+              onDelete={(taskId) => action('delete', [taskId])}
+              onCopy={(taskId) => action('copy', [taskId])}
               onReorder={(orderedIds) => reorderDayTasks(iso, orderedIds)}
               onSelect={select}
               onMenu={(id) => setMenuFor(id)}

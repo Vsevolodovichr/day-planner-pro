@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
 import {
@@ -11,7 +12,13 @@ import {
 } from '../lib/date';
 import { useTasks } from '../components/Hooks';
 import { TaskRow } from '../components/TaskRow';
-import { taskOccursOnDate, tasksForDate, toggleTaskCompletion } from '../lib/task-utils';
+import {
+  newSubtask,
+  taskOccursOnDate,
+  tasksForDate,
+  taskText,
+  toggleTaskCompletion,
+} from '../lib/task-utils';
 
 export const Route = createFileRoute('/calendar')({ component: CalendarScreen });
 
@@ -75,6 +82,93 @@ function CalendarScreen() {
   const toggle = (id: string) =>
     save(tasks.map((t) => (t.id === id ? toggleTaskCompletion(t) : t)));
 
+  const copyTaskText = (id: string) => {
+    const task = tasks.find((item) => item.id === id);
+    const text = task ? taskText(task) : '';
+    if (!text) return;
+    if (navigator.clipboard) {
+      void navigator.clipboard
+        .writeText(text)
+        .then(() => toast.success('Скопійовано'))
+        .catch(() => toast.error('Не вдалося скопіювати'));
+    } else {
+      toast.error('Буфер обміну недоступний');
+    }
+  };
+
+  const sendTask = (id: string) => {
+    const task = tasks.find((item) => item.id === id);
+    const text = task ? taskText(task) : '';
+    if (text && navigator.share) void navigator.share({ text }).catch(() => undefined);
+    if (text && !navigator.share) copyTaskText(id);
+  };
+
+  const addSubtask = (id: string) => {
+    const title = window.prompt('Підзадача');
+    if (!title?.trim()) return;
+    save(
+      tasks.map((task) =>
+        task.id === id ? { ...task, subtasks: [...task.subtasks, newSubtask(title.trim())] } : task,
+      ),
+    );
+  };
+
+  const toggleSubtask = (taskId: string, subtaskId: string) => {
+    save(
+      tasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              subtasks: task.subtasks.map((item) =>
+                item.id === subtaskId ? toggleTaskCompletion(item) : item,
+              ),
+            }
+          : task,
+      ),
+    );
+  };
+
+  const editSubtask = (taskId: string, subtaskId: string) => {
+    const subtask = tasks
+      .find((task) => task.id === taskId)
+      ?.subtasks.find((item) => item.id === subtaskId);
+    const title = window.prompt('Підзадача', subtask ? taskText(subtask) : '');
+    if (!title?.trim()) return;
+    save(
+      tasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              subtasks: task.subtasks.map((item) =>
+                item.id === subtaskId ? { ...item, title: title.trim() } : item,
+              ),
+            }
+          : task,
+      ),
+    );
+  };
+
+  const deleteSubtask = (taskId: string, subtaskId: string) => {
+    save(
+      tasks.map((task) =>
+        task.id === taskId
+          ? { ...task, subtasks: task.subtasks.filter((item) => item.id !== subtaskId) }
+          : task,
+      ),
+    );
+  };
+
+  const transferTask = (id: string) => {
+    const nextDate = window.prompt('Дата у форматі YYYY-MM-DD', selectedISO);
+    if (!nextDate) return;
+    save(tasks.map((task) => (task.id === id ? { ...task, date: nextDate } : task)));
+  };
+
+  const deleteTask = (id: string) => {
+    if (!window.confirm('Видалити завдання?')) return;
+    save(tasks.filter((task) => task.id !== id));
+  };
+
   return (
     <AppShell>
       {/* Header */}
@@ -126,7 +220,8 @@ function CalendarScreen() {
       </div>
 
       {/* Month grid */}
-      <div style={{ padding: '0 12px' }}>
+      <div style={{ padding: '0 12px',
+         background: 'linear-gradient(155deg, hsla(0, 0%, 6%, 0.65) 0%, hsla(0, 0%, 12%, 0.65) 30%, hsla(240, 2%, 8%, 0.65) 50%,hsla(0, 0%, 12%, 0.65) 70%,hsla(0, 0%, 7%, 0.65) 100%)', }}>
         <div className="glass" style={{ borderRadius: 22, padding: '12px 10px 14px' }}>
           <div
             style={{
@@ -326,6 +421,21 @@ function CalendarScreen() {
                     search: { id: t.id },
                   })
                 }
+                onToggleSubtask={(subtaskId) => toggleSubtask(t.id, subtaskId)}
+                onEditSubtask={(subtaskId) => editSubtask(t.id, subtaskId)}
+                onDeleteSubtask={(subtaskId) => deleteSubtask(t.id, subtaskId)}
+                onAddSubtask={() => addSubtask(t.id)}
+                onEdit={() =>
+                  navigate({
+                    to: '/task/$date',
+                    params: { date: t.date || selectedISO },
+                    search: { id: t.id },
+                  })
+                }
+                onTransfer={() => transferTask(t.id)}
+                onSend={() => sendTask(t.id)}
+                onDelete={() => deleteTask(t.id)}
+                onCopy={() => copyTaskText(t.id)}
                 onMenu={() => {}}
               />
             ))}

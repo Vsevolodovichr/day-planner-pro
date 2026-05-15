@@ -8,6 +8,8 @@
 }
 
 :root {
+
+  --sat: env(safe-area-inset-top);
   /* Gold palette (premium) */
   --gold-1: #F8DC8A;
   --gold-2: #E5C26A;
@@ -52,8 +54,8 @@
   --accent-light-85: rgba(248, 220, 138, 0.85);
 
   /* Glass surface (intensity 85%) */
-  --glass-a: hsla(0 0% 20% / 0.04);
-  --glass-b: hsla(0 0% 20% / 0.02);
+  --glass-a: hsla(0 0% 3% / 0.9);
+  --glass-b: hsla(0 0% 50% / 0.9);
   --glass-stroke: hsla(0 0% 20% / 0.4);
   --glass-hilite: hsla(0 0% 20% / 0.125);
  /* --glass-blur: 10px;*/
@@ -70,11 +72,12 @@
   --txt-muted: rgba(244,245,247,0.62);
   --txt-dim: rgba(244,245,247,0.42);
   --txt-faint: rgba(244,245,247,0.22);
-  --hairline: rgba(255,255,255,0.06);
+  --hairline: rgba(255,255,255,0.3);
 
   /* App background */
   --bg-app: radial-gradient(120% 80% at 50% 0%, #090909 0%, #000 70%);
-  --bg-image: url('/app-background.png');
+  --bg-image: url('/app-background-mobile.png');
+  --bg-image-desktop: url('/app-background-desktop.png');
 
   /* Legacy aliases — keep old components working */
   --app-bg: #000;
@@ -99,12 +102,11 @@
 html,
 body,
 #root {
-  background:
-    var(--bg-image) center / cover no-repeat,
-    var(--bg-app);
+  background: var(--bg-app);
   color: var(--txt-main);
   font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   margin: 0;
   min-height: 100%;
   width: 100%;
@@ -112,18 +114,38 @@ body,
   overflow-x: hidden;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-input, textarea, button { font-family: inherit; color: inherit; }
-input:focus, textarea:focus { outline: none; }
+input,
+textarea,
+button {
+  font-family: inherit;
+  color: inherit;
+}
 
-::-webkit-scrollbar { width: 0; height: 0; }
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { scrollbar-width: none; }
+input:focus,
+textarea:focus {
+  outline: none;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
 
 /* Glass surface utility */
 .glass {
-  background: linear-gradient(180deg, var(--glass-a) 30%, var(--glass-b) 10%);
+  background: linear-gradient(180deg, var(--glass-a) 100%, var(--glass-b) 0%);
   border: 1px solid var(--glass-stroke);
 }
 
@@ -138,20 +160,18 @@ input:focus, textarea:focus { outline: none; }
 .fornastya-phone {
   --app-shell-main-bottom: calc(96px + env(safe-area-inset-bottom));
   --app-shell-action-bottom: calc(96px + env(safe-area-inset-bottom));
-  --app-shell-bg-left: 0px;
-  --app-shell-bg-top: 0px;
-  --app-shell-bg-width: 100vw;
-  --app-shell-bg-height: 100dvh;
-  background:
-    linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.12) 70%),
-    var(--bg-image) center / cover no-repeat,
-    var(--bg-app);
-  background-attachment: fixed, fixed, fixed;
-  isolation: isolate;
+
   position: relative;
   height: 100dvh;
   max-width: 100%;
   overflow: hidden;
+
+  background-color: var(--bg-app);
+
+  background-image: var(--bg-image);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 .app-shell-root,
@@ -166,37 +186,6 @@ input:focus, textarea:focus { outline: none; }
 
 .app-shell-main {
   overscroll-behavior: contain;
-}
-
-.fornastya-phone::before,
-.fornastya-phone::after {
-  content: "";
-  position: fixed;
-  left: var(--app-shell-bg-left);
-  top: var(--app-shell-bg-top);
-  width: var(--app-shell-bg-width);
-  height: var(--app-shell-bg-height);
-  z-index: 0;
-  pointer-events: none;
-  border-radius: inherit;
-}
-
-.fornastya-phone::before {
-  background:
-    linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.62) 80%),
-    var(--bg-image) center / cover no-repeat,
-    var(--bg-app);
-}
-
-.fornastya-phone::after {
-  background:
-    linear-gradient(rgba(var(--accent-rgb), 0.94), rgba(var(--accent-rgb), 0.94)),
-    var(--bg-image) center / cover no-repeat;
-  background-attachment: fixed, fixed;
-  background-blend-mode: multiply;
-  mix-blend-mode: screen;
-  filter: brightness(1.45) contrast(2.6);
-  opacity: 0.48;
 }
 
 .fornastya-phone > * {
@@ -254,9 +243,9 @@ input:focus, textarea:focus { outline: none; }
 
 .app-shell-floating-action {
   position: fixed;
-  right: calc(100vw - var(--app-shell-bg-left) - var(--app-shell-bg-width) + 18px);
+  right: calc(100vw - var(--app-shell-bg-left, 0px) - var(--app-shell-bg-width, 100vw) + 18px);
   bottom: calc(
-    100dvh - var(--app-shell-bg-top) - var(--app-shell-bg-height) +
+    100dvh - var(--app-shell-bg-top, 0px) - var(--app-shell-bg-height, 100dvh) +
     var(--app-shell-action-bottom, calc(96px + env(safe-area-inset-bottom)))
   );
 }
@@ -280,6 +269,7 @@ input:focus, textarea:focus { outline: none; }
   .fornastya-phone {
     --app-shell-main-bottom: 116px;
     --app-shell-action-bottom: 116px;
+    --bg-image: var(--bg-image-desktop);
     --app-shell-bg-left: calc((100vw - min(calc(100vw - 48px), 1180px)) / 2);
     --app-shell-bg-top: 24px;
     --app-shell-bg-width: min(calc(100vw - 48px), 1180px);

@@ -58,26 +58,6 @@ function Notes() {
             <div style={{ fontSize: 14, color: 'var(--txt-muted)' }}>
               Створіть свою першу нотатку
             </div>
-            <button
-              onClick={() => navigate({ to: '/notes/$id', params: { id: 'new' } })}
-              style={{
-                marginTop: 14,
-                height: 44,
-                borderRadius: 999,
-                border: '1px solid var(--accent-light-50)',
-                background: 'var(--gold-shine)',
-                color: '#1A1308',
-                fontWeight: 600,
-                fontSize: 14.5,
-                padding: '0 18px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                cursor: 'pointer',
-              }}
-            >
-              <Plus size={16} strokeWidth={2.2} /> Створити
-            </button>
           </div>
         ) : (
           notes.map((n) => (
@@ -196,28 +176,26 @@ function Notes() {
       </div>
 
       {/* FAB */}
-      {notes.length > 0 && (
-        <button
-          className="app-shell-floating-action"
-          onClick={() => navigate({ to: '/notes/$id', params: { id: 'new' } })}
-          aria-label="Створити нотатку"
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: 999,
-            border: '1px solid var(--accent-light-50)',
-            background: 'var(--gold-shine)',
-            color: '#1A1308',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            zIndex: 35,
-          }}
-        >
-          <Plus size={22} strokeWidth={2.4} />
-        </button>
-      )}
+      <button
+        className="app-shell-floating-action"
+        onClick={() => navigate({ to: '/notes/$id', params: { id: 'new' } })}
+        aria-label="Створити нотатку"
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: 999,
+          border: '1px solid var(--accent-light-50)',
+          background: 'var(--gold-shine)',
+          color: '#1A1308',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          zIndex: 35,
+        }}
+      >
+        <Plus size={22} strokeWidth={2.4} />
+      </button>
     </AppShell>
   );
 }

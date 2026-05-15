@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { ChevronLeft, Check, ChevronDown, Clock, Repeat2, Sparkles, Palette } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
 import { IOSSwitch } from '../components/IOSSwitch';
@@ -7,7 +8,13 @@ import { SortableTaskList } from '../components/SortableTaskList';
 import { useTasks } from '../components/Hooks';
 import { uid } from '../lib/storage';
 import { formatLong } from '../lib/date';
-import { reorderTasksForDate, taskText, tasksForDate, toggleTaskCompletion } from '../lib/task-utils';
+import {
+  newSubtask,
+  reorderTasksForDate,
+  taskText,
+  tasksForDate,
+  toggleTaskCompletion,
+} from '../lib/task-utils';
 
 const repeatOptions = [
   { value: 'daily', label: 'Кожен день' },
@@ -91,6 +98,94 @@ function TaskEditor() {
 
   const reorderDayTasks = (orderedIds: string[]) => {
     save(reorderTasksForDate(tasks, date, orderedIds));
+  };
+
+  const copyTaskText = (taskId: string) => {
+    const task = tasks.find((item) => item.id === taskId);
+    const text = task ? taskText(task) : '';
+    if (!text) return;
+    if (navigator.clipboard) {
+      void navigator.clipboard
+        .writeText(text)
+        .then(() => toast.success('Скопійовано'))
+        .catch(() => toast.error('Не вдалося скопіювати'));
+    } else {
+      toast.error('Буфер обміну недоступний');
+    }
+  };
+
+  const sendTask = (taskId: string) => {
+    const task = tasks.find((item) => item.id === taskId);
+    const text = task ? taskText(task) : '';
+    if (text && navigator.share) void navigator.share({ text }).catch(() => undefined);
+    if (text && !navigator.share) copyTaskText(taskId);
+  };
+
+  const addSubtask = (taskId: string) => {
+    const title = window.prompt('Підзадача');
+    if (!title?.trim()) return;
+    save(
+      tasks.map((task) =>
+        task.id === taskId ? { ...task, subtasks: [...task.subtasks, newSubtask(title.trim())] } : task,
+      ),
+    );
+  };
+
+  const editSubtask = (taskId: string, subtaskId: string) => {
+    const subtask = tasks
+      .find((task) => task.id === taskId)
+      ?.subtasks.find((item) => item.id === subtaskId);
+    const title = window.prompt('Підзадача', subtask ? taskText(subtask) : '');
+    if (!title?.trim()) return;
+    save(
+      tasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              subtasks: task.subtasks.map((item) =>
+                item.id === subtaskId ? { ...item, title: title.trim() } : item,
+              ),
+            }
+          : task,
+      ),
+    );
+  };
+
+  const deleteSubtask = (taskId: string, subtaskId: string) => {
+    save(
+      tasks.map((task) =>
+        task.id === taskId
+          ? { ...task, subtasks: task.subtasks.filter((item) => item.id !== subtaskId) }
+          : task,
+      ),
+    );
+  };
+
+  const toggleSubtask = (taskId: string, subtaskId: string) => {
+    save(
+      tasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              subtasks: task.subtasks.map((item) =>
+                item.id === subtaskId ? toggleTaskCompletion(item) : item,
+              ),
+            }
+          : task,
+      ),
+    );
+  };
+
+  const transferTask = (taskId: string) => {
+    const nextDate = window.prompt('Дата у форматі YYYY-MM-DD', date);
+    if (!nextDate) return;
+    save(tasks.map((task) => (task.id === taskId ? { ...task, date: nextDate } : task)));
+  };
+
+  const deleteTask = (taskId: string) => {
+    if (!window.confirm('Видалити завдання?')) return;
+    save(tasks.filter((task) => task.id !== taskId));
+    if (id === taskId) navigate({ to: '/task/$date', params: { date } });
   };
 
   const submit = () => {
@@ -191,6 +286,17 @@ function TaskEditor() {
               onSelect={(taskId) =>
                 navigate({ to: '/task/$date', params: { date }, search: { id: taskId } })
               }
+              onToggleSubtask={toggleSubtask}
+              onEditSubtask={editSubtask}
+              onDeleteSubtask={deleteSubtask}
+              onAddSubtask={addSubtask}
+              onEdit={(taskId) =>
+                navigate({ to: '/task/$date', params: { date }, search: { id: taskId } })
+              }
+              onTransfer={transferTask}
+              onSend={sendTask}
+              onDelete={deleteTask}
+              onCopy={copyTaskText}
               onReorder={reorderDayTasks}
             />
           </div>

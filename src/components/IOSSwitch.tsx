@@ -12,7 +12,7 @@ export function IOSSwitch({
       style={{ width: 51, height: 31, background: checked ? 'var(--accent)' : '#3A3D42' }}
     >
       <div
-        className="absolute top-[2px] rounded-full bg-white transition-transform"
+        className="absolute top-0.5 rounded-full bg-white transition-transform"
         style={{
           width: 27,
           height: 27,

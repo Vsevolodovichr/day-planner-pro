@@ -57,6 +57,12 @@ export function DayCard({
   onToggleSubtask,
   onEditSubtask,
   onDeleteSubtask,
+  onAddSubtask,
+  onEdit,
+  onTransfer,
+  onSend,
+  onDelete,
+  onCopy,
   onReorder,
   onSelect,
   onMenu,
@@ -70,6 +76,12 @@ export function DayCard({
   onToggleSubtask: (taskId: string, subtaskId: string) => void;
   onEditSubtask: (taskId: string, subtaskId: string) => void;
   onDeleteSubtask: (taskId: string, subtaskId: string) => void;
+  onAddSubtask?: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onTransfer?: (id: string) => void;
+  onSend?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onCopy?: (id: string) => void;
   onReorder?: (orderedIds: string[]) => void;
   onSelect: (id: string) => void;
   onMenu: (id: string) => void;
@@ -282,6 +294,12 @@ export function DayCard({
               onToggleSubtask={onToggleSubtask}
               onEditSubtask={onEditSubtask}
               onDeleteSubtask={onDeleteSubtask}
+              onAddSubtask={onAddSubtask}
+              onEdit={onEdit}
+              onTransfer={onTransfer}
+              onSend={onSend}
+              onDelete={onDelete}
+              onCopy={onCopy}
               onReorder={onReorder}
             />
           )}
