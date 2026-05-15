@@ -7,7 +7,6 @@ import { ContextActionSheet } from '../components/ContextActionSheet';
 import { useTasks, useUnreadNotifications } from '../components/Hooks';
 import { getWeekDates, toISO, UA_DAYS_FULL, UA_MONTHS } from '../lib/date';
 import {
-  completedDayStreak,
   newSubtask,
   reorderTasksForDate,
   taskText,
@@ -15,7 +14,7 @@ import {
   toggleTaskCompletion,
 } from '../lib/task-utils';
 import { greetingByHour } from '../lib/theme';
-import { ChevronLeft, ChevronRight, Search, Bell, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Bell } from 'lucide-react';
 
 export const Route = createFileRoute('/')({
   head: () => ({
@@ -26,48 +25,6 @@ export const Route = createFileRoute('/')({
   }),
   component: Home,
 });
-
-function ProgressRing({
-  value = 0,
-  size = 52,
-  stroke = 4,
-}: {
-  value?: number;
-  size?: number;
-  stroke?: number;
-}) {
-  const r = (size - stroke) / 2;
-  const C = 2 * Math.PI * r;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block' }}>
-      <defs>
-        <linearGradient id="hero-ring" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="var(--gold-1)" />
-          <stop offset="1" stopColor="var(--gold-3)" />
-        </linearGradient>
-      </defs>
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        stroke="rgba(255,255,255,0.10)"
-        strokeWidth={stroke}
-        fill="none"
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        stroke="url(#hero-ring)"
-        strokeWidth={stroke}
-        fill="none"
-        strokeDasharray={`${C * value} ${C}`}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      />
-    </svg>
-  );
-}
 
 const XATOSFERA_URL =
   import.meta.env.VITE_XATOSFERA_URL?.trim().replace(/\/$/, '') || 'https://hatosfera-crm.pp.ua';
@@ -257,8 +214,6 @@ export function Home() {
   const today = new Date();
   const todayTasks = tasksForDate(tasks, todayISO);
   const todayDone = todayTasks.filter((t) => t.completed).length;
-  const todayPct = todayTasks.length ? todayDone / todayTasks.length : 0;
-  const streak = useMemo(() => completedDayStreak(tasks, todayISO), [tasks, todayISO]);
 
   const shiftWeek = (delta: number) => {
     const next = new Date(selectedDate);
@@ -539,7 +494,6 @@ export function Home() {
               gap: 14,
             }}
           >
-            <ProgressRing value={todayPct} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
@@ -567,25 +521,6 @@ export function Home() {
                   </span>
                 </span>
                 <span style={{ fontSize: 13, color: 'var(--txt-muted)' }}>виконано</span>
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 10, color: 'var(--txt-dim)', letterSpacing: 0.5 }}>
-                СЕРІЯ
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  justifyContent: 'flex-end',
-                  marginTop: 2,
-                }}
-              >
-                <Sparkles size={13} color="var(--gold-text)" />
-                <span className="gold-text" style={{ fontWeight: 600, fontSize: 13 }}>
-                  {streak} днів
-                </span>
               </div>
             </div>
           </div>

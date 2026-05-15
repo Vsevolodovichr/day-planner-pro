@@ -5,49 +5,6 @@ import { Task } from '../types';
 import { fromISO, UA_DAYS_FULL, UA_DAYS_SHORT, UA_MONTHS } from '../lib/date';
 import { SortableTaskList } from './SortableTaskList';
 
-function ProgressRing({
-  value = 0,
-  size = 38,
-  stroke = 3.5,
-}: {
-  value?: number;
-  size?: number;
-  stroke?: number;
-}) {
-  const r = (size - stroke) / 2;
-  const C = 2 * Math.PI * r;
-  const id = `gring-${size}`;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block' }}>
-      <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="var(--gold-1)" />
-          <stop offset="1" stopColor="var(--gold-3)" />
-        </linearGradient>
-      </defs>
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        stroke="rgba(200, 200, 200, 0.23)"
-        strokeWidth={stroke}
-        fill="none"
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        stroke={`url(#${id})`}
-        strokeWidth={stroke}
-        fill="none"
-        strokeDasharray={`${C * value} ${C}`}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      />
-    </svg>
-  );
-}
-
 export function DayCard({
   iso,
   tasks,
@@ -94,7 +51,6 @@ export function DayCard({
   const isWeekend = dow >= 5;
   const done = tasks.filter((t) => t.completed).length;
   const total = tasks.length;
-  const pct = total > 0 ? done / total : 0;
   const allDone = total > 0 && done === total;
 
   const dateColBg = isToday ? 'var(--gold-shine)' : 'rgba(255,255,255,0.03)';
@@ -220,10 +176,10 @@ export function DayCard({
               'Немає завдань'
             ) : allDone ? (
               <span style={{ color: 'var(--gold-text)', fontWeight: 500 }}>
-                Виконано · {done}/{total}
+                Виконано · {total}
               </span>
             ) : (
-              `${done}/${total} виконано`
+              `${total} завдань`
             )}
           </div>
         </div>
@@ -237,7 +193,6 @@ export function DayCard({
             paddingRight: 14,
           }}
         >
-          {total > 0 && <ProgressRing value={pct} />}
           <span
             onClick={(event) => {
               event.stopPropagation();
