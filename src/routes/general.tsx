@@ -557,9 +557,17 @@ function General() {
     }
   };
 
+  const closeEditor = () => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    setEditing(null);
+    requestAnimationFrame(() => window.scrollTo(0, 0));
+  };
+
   const onSaveEdit = (next: Task) => {
     saveTasks(tasks.map((t) => (t.id === next.id ? next : t)));
-    setEditing(null);
+    closeEditor();
   };
 
   const copyTask = (id: string) => {
@@ -971,7 +979,7 @@ function General() {
       </button>
 
       {editing && (
-        <EditModal task={editing} onClose={() => setEditing(null)} onSave={onSaveEdit} />
+        <EditModal task={editing} onClose={closeEditor} onSave={onSaveEdit} />
       )}
       {taskModalOpen && (
         <SubtaskModal
