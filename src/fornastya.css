@@ -114,6 +114,19 @@ body,
   overflow-x: hidden;
 }
 
+#root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--bg-app);
+  background-image: var(--bg-image);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -167,12 +180,7 @@ textarea:focus {
   max-width: 100%;
   overflow: hidden;
 
-  background-color: var(--bg-app);
-
-  background-image: var(--bg-image);
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
+  background-color: transparent;
 }
 
 .app-shell-root,
@@ -182,6 +190,8 @@ textarea:focus {
 }
 
 .app-shell-root {
+  position: relative;
+  z-index: 1;
   overflow: hidden;
 }
 
@@ -261,6 +271,10 @@ textarea:focus {
 }
 
 @media (min-width: 1024px) {
+  #root::before {
+    background-image: var(--bg-image-desktop);
+  }
+
   .app-shell-root {
     min-height: 100dvh;
     align-items: center;
@@ -270,7 +284,6 @@ textarea:focus {
   .fornastya-phone {
     --app-shell-main-bottom: 116px;
     --app-shell-action-bottom: 116px;
-    --bg-image: var(--bg-image-desktop);
     --app-shell-bg-left: calc((100vw - min(calc(100vw - 48px), 1180px)) / 2);
     --app-shell-bg-top: 24px;
     --app-shell-bg-width: min(calc(100vw - 48px), 1180px);
