@@ -3,6 +3,7 @@ import { useMemo, useRef, useState, type TouchEvent } from 'react';
 import { toast } from 'sonner';
 import { AppShell } from '../components/AppShell';
 import { DayCard } from '../components/DayCard';
+import { LivingDaySphere } from '../components/LivingDaySphere';
 import { ContextActionSheet } from '../components/ContextActionSheet';
 import { useTasks, useUnreadNotifications } from '../components/Hooks';
 import { getWeekDates, toISO, UA_DAYS_FULL, UA_MONTHS } from '../lib/date';
@@ -212,8 +213,6 @@ export function Home() {
   const isHorizontalWeekSwipe = useRef(false);
 
   const today = new Date();
-  const todayTasks = tasksForDate(tasks, todayISO);
-  const todayDone = todayTasks.filter((t) => t.completed).length;
 
   const shiftWeek = (delta: number) => {
     const next = new Date(selectedDate);
@@ -435,35 +434,25 @@ export function Home() {
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  letterSpacing: 1.2,
-                  textTransform: 'uppercase',
-                  color: 'var(--txt-dim)',
-                  fontWeight: 500,
-                }}
-              >
-                {UA_DAYS_FULL[today.getDay()]}, {today.getDate()} {UA_MONTHS[today.getMonth()]}
-              </div>
+
               <div
                 className="gold-text"
                 style={{
                   marginTop: 4,
                   lineHeight: 1.1,
                   fontWeight: 500,
-                  fontSize: 20,
-                  letterSpacing: 0.5,
+                  fontSize: 18,
+                  
                 }}
               >
                 {greetingByHour(today)},<br />
               </div>
               <div className="gold-text"
               style={{
-                fontWeight: 400,
-                fontSize: 26,
-                letterSpacing: 1.2,
-                lineHeight: 1.5,
+                fontWeight: 600,
+                fontSize: 28,
+                letterSpacing: 1.9,
+                lineHeight: 1.9,
               }}
               >Анастасіє
               </div>
@@ -482,48 +471,7 @@ export function Home() {
             </div>
           </div>
 
-          {/* Today progress */}
-          <div
-            className="glass"
-            style={{
-              marginTop: 14,
-              borderRadius: 12,
-              padding: 4,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 11,
-                  letterSpacing: 1,
-                  color: 'var(--txt-muted)',
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                }}
-              >
-                Сьогодні
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
-                <span
-                  className="gold-text"
-                  style={{ fontSize: 26, fontWeight: 700, letterSpacing: -0.5 }}
-                >
-                  {todayDone}
-                  <span
-                    style={{
-                      WebkitTextFillColor: 'rgba(244,245,247,0.35)',
-                    }}
-                  >
-                    /{todayTasks.length}
-                  </span>
-                </span>
-                <span style={{ fontSize: 13, color: 'var(--txt-muted)' }}>виконано</span>
-              </div>
-            </div>
-          </div>
+          <LivingDaySphere />
         </div>
 
         {/* Desktop arrow controls */}
