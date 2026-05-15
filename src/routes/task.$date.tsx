@@ -229,9 +229,12 @@ function TaskEditor() {
     <AppShell showToolbar={false}>
       <div
         style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 5,
+          position: 'fixed',
+          top: 'var(--app-shell-bg-top, 0px)',
+          left: 'var(--app-shell-bg-left, 0px)',
+          width: 'var(--app-shell-bg-width, 100vw)',
+          boxSizing: 'border-box',
+          zIndex: 30,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -275,7 +278,7 @@ function TaskEditor() {
         </button>
       </div>
 
-      <div style={{ padding: '4px 14px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ padding: '72px 14px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {dayTasks.length > 0 && (
           <div className="glass" style={{ borderRadius: 18, overflow: 'hidden' }}>
             <SortableTaskList
