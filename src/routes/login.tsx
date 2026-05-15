@@ -49,7 +49,7 @@ function LoginPage() {
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="h-12 w-full rounded-2xl border border-white/10 bg-cardDark px-4 text-base text-textMain"
+              className="field-input h-12"
               required
             />
           </label>
@@ -61,7 +61,7 @@ function LoginPage() {
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="h-12 w-full rounded-2xl border border-white/10 bg-cardDark px-4 text-base text-textMain"
+              className="field-input h-12"
               required
             />
           </label>

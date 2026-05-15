@@ -102,7 +102,8 @@
 html,
 body,
 #root {
-  background: var(--bg-app);
+  background-color: #000;
+  background-attachment: fixed;
   color: var(--txt-main);
   font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -114,14 +115,23 @@ body,
   overflow-x: hidden;
 }
 
-#root::before {
+html {
+  overscroll-behavior: none;
+}
+
+body,
+#root {
+  min-height: 100dvh;
+}
+
+body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-color: var(--bg-app);
-  background-image: var(--bg-image);
+  background-color: #000;
+  background-image: var(--bg-image), var(--bg-app);
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -141,6 +151,43 @@ button {
 input:focus,
 textarea:focus {
   outline: none;
+}
+
+.field-input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-stroke);
+  border-radius: 14px;
+  color: var(--txt-main);
+  padding: 12px 14px;
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  min-width: 0;
+}
+
+.field-input::placeholder {
+  color: var(--txt-dim);
+}
+
+.field-input--bare {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.field-input--textarea {
+  resize: none;
+  line-height: 1.5;
+}
+
+.field-input--color {
+  width: 40px;
+  height: 32px;
+  min-width: 40px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
 ::-webkit-scrollbar {
@@ -175,10 +222,10 @@ textarea:focus {
   --app-shell-action-bottom: calc(96px + env(safe-area-inset-bottom));
 
   position: relative;
-  height: 100dvh;
+  min-height: 100dvh;
   padding-top: var(--sat);
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible;
 
   background-color: transparent;
 }
@@ -207,7 +254,7 @@ textarea:focus {
 .app-bottom-nav {
   position: fixed;
   left: 50%;
-  bottom: calc(14px + env(safe-area-inset-bottom));
+  bottom: calc(14px + env(safe-area-inset-bottom) + var(--kb-offset, 0px));
   width: calc(100% - 24px);
   max-width: 406px;
   z-index: 40;
@@ -257,7 +304,8 @@ textarea:focus {
   right: calc(100vw - var(--app-shell-bg-left, 0px) - var(--app-shell-bg-width, 100vw) + 18px);
   bottom: calc(
     100dvh - var(--app-shell-bg-top, 0px) - var(--app-shell-bg-height, 100dvh) +
-    var(--app-shell-action-bottom, calc(96px + env(safe-area-inset-bottom)))
+    var(--app-shell-action-bottom, calc(96px + env(safe-area-inset-bottom))) +
+    var(--kb-offset, 0px)
   );
 }
 
@@ -271,8 +319,8 @@ textarea:focus {
 }
 
 @media (min-width: 1024px) {
-  #root::before {
-    background-image: var(--bg-image-desktop);
+  body::before {
+    background-image: var(--bg-image-desktop), var(--bg-app);
   }
 
   .app-shell-root {
@@ -305,7 +353,7 @@ textarea:focus {
   }
 
   .app-bottom-nav {
-    bottom: 24px;
+    bottom: calc(24px + var(--kb-offset, 0px));
     width: min(calc(100% - 96px), 640px);
     max-width: 640px;
     padding: 12px 10px;

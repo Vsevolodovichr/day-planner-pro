@@ -11,6 +11,27 @@ const root = document.getElementById('root');
 let updateServiceWorker: ReturnType<typeof registerSW> | null = null;
 let pwaUpdateListenersAttached = false;
 
+function syncKeyboardOffset() {
+  const visualViewport = window.visualViewport;
+  const offset = visualViewport
+    ? Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop)
+    : 0;
+
+  document.documentElement.style.setProperty('--kb-offset', `${Math.round(offset)}px`);
+}
+
+function attachKeyboardOffsetSync() {
+  const visualViewport = window.visualViewport;
+
+  syncKeyboardOffset();
+  window.addEventListener('resize', syncKeyboardOffset);
+
+  if (!visualViewport) return;
+
+  visualViewport.addEventListener('resize', syncKeyboardOffset);
+  visualViewport.addEventListener('scroll', syncKeyboardOffset);
+}
+
 function registerPwa() {
   if (updateServiceWorker) return;
 
@@ -56,6 +77,8 @@ function registerPwa() {
 if (!root) {
   throw new Error('Root element not found');
 }
+
+attachKeyboardOffsetSync();
 
 if (document.readyState === 'complete') {
   registerPwa();

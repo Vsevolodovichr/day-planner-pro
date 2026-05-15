@@ -329,16 +329,10 @@ function TaskEditor() {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Завдання"
             rows={6}
+            className="field-input field-input--bare field-input--textarea"
             style={{
               flex: 1,
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
               fontSize: 17,
-              color: 'var(--txt-main)',
-              resize: 'none',
-              fontFamily: 'inherit',
-              lineHeight: 1.5,
             }}
           />
         </div>
@@ -436,14 +430,12 @@ function TaskEditor() {
               type="color"
               value={color}
               onChange={(e) => setColor(e.target.value)}
+              className="field-input field-input--color"
               style={{
                 width: 36,
                 height: 36,
-                padding: 0,
-                background: 'transparent',
                 border: '1px dashed var(--accent-40)',
                 borderRadius: 8,
-                cursor: 'pointer',
               }}
             />
           </div>
@@ -489,14 +481,12 @@ function TaskEditor() {
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
+              className="field-input"
               style={{
                 marginBottom: 14,
                 height: 48,
-                width: '100%',
                 borderRadius: 16,
-                background: 'transparent',
                 color: 'var(--gold-text-strong)',
-                border: '1px solid var(--glass-stroke)',
                 textAlign: 'center',
                 fontSize: 22,
                 fontVariantNumeric: 'tabular-nums',

@@ -119,14 +119,10 @@ function NoteEditor() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Назва"
+            className="field-input field-input--bare"
             style={{
-              width: '100%',
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
               fontSize: 18,
               fontWeight: 500,
-              color: 'var(--txt-main)',
             }}
           />
         </div>
@@ -136,17 +132,10 @@ function NoteEditor() {
             onChange={(e) => setText(e.target.value)}
             placeholder="Текст…"
             rows={16}
+            className="field-input field-input--bare field-input--textarea"
             style={{
-              width: '100%',
               minHeight: 320,
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              fontSize: 15,
               lineHeight: 1.55,
-              color: 'var(--txt-main)',
-              resize: 'none',
-              fontFamily: 'inherit',
             }}
           />
         </div>

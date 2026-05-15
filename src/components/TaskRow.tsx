@@ -1,6 +1,7 @@
 import {
   ArrowRightLeft,
   Copy,
+  GripVertical,
   ListPlus,
   Pencil,
   Send,
@@ -125,6 +126,7 @@ function SwipeableTaskCard({
   const pointerIdRef = useRef<number | null>(null);
   const gestureRef = useRef<'idle' | 'horizontal' | 'vertical'>('idle');
   const draggedRef = useRef(false);
+  const suppressClickRef = useRef(false);
   const openSideRef = useRef<'left' | 'right' | null>(null);
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -174,6 +176,7 @@ function SwipeableTaskCard({
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!canSwipe || (event.pointerType === 'mouse' && event.button !== 0)) return;
+    if ((event.target as Element).closest('[data-task-drag-handle="true"]')) return;
     pointerIdRef.current = event.pointerId;
     startXRef.current = event.clientX;
     startYRef.current = event.clientY;
@@ -225,6 +228,7 @@ function SwipeableTaskCard({
             ? maxSwipeRight
             : 0;
       if (nextOffset !== 0) window.dispatchEvent(new CustomEvent(SWIPE_OPEN_EVENT, { detail: id }));
+      suppressClickRef.current = draggedRef.current;
       setOpenSide(nextOffset > 0 ? 'left' : nextOffset < 0 ? 'right' : null);
       setSwipeOffset(nextOffset);
       event.preventDefault();
@@ -352,6 +356,12 @@ function SwipeableTaskCard({
         onPointerUp={handlePointerEnd}
         onPointerCancel={handlePointerEnd}
         onClickCapture={(event) => {
+          if (suppressClickRef.current) {
+            suppressClickRef.current = false;
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
           if (!draggedRef.current && offsetRef.current === 0) return;
           event.preventDefault();
           event.stopPropagation();
@@ -415,6 +425,9 @@ export function TaskRow({
   onSend,
   onDelete,
   onCopy,
+  showDragHandle = false,
+  dragHandleAttributes,
+  dragHandleListeners,
   variant = 'default',
   selected = false,
 }: {
@@ -542,6 +555,32 @@ export function TaskRow({
             }}
           >
             {task.time}
+          </span>
+        )}
+
+        {showDragHandle && (
+          <span
+            {...dragHandleAttributes}
+            {...dragHandleListeners}
+            data-task-drag-handle="true"
+            aria-label="Перетягнути"
+            role="button"
+            tabIndex={0}
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: 30,
+              height: 34,
+              borderRadius: 10,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--txt-dim)',
+              cursor: 'grab',
+              flexShrink: 0,
+              touchAction: 'none',
+            }}
+          >
+            <GripVertical size={16} />
           </span>
         )}
 

@@ -103,14 +103,9 @@ function NotifSettings() {
               value={accentColor}
               onChange={(e) => updateAccent(e.target.value)}
               aria-label="Власний колір"
+              className="field-input field-input--color"
               style={{
-                width: 40,
-                height: 32,
-                padding: 0,
-                border: '1px solid var(--glass-stroke)',
                 borderRadius: 10,
-                background: 'transparent',
-                cursor: 'pointer',
               }}
             />
           </div>

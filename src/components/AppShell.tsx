@@ -20,7 +20,6 @@ export function AppShell({
         className={`fornastya-phone app-shell-frame relative w-full min-h-dvh flex flex-col ${
           showToolbar ? 'has-toolbar' : 'no-toolbar'
         }`}
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <main
           className="app-shell-main flex-1 overflow-y-auto no-scrollbar"

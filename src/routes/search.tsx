@@ -36,7 +36,7 @@ function SearchScreen() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Пошук..."
-              className="flex-1 bg-transparent text-[16px]"
+              className="field-input field-input--bare flex-1"
             />
           </div>
         </div>

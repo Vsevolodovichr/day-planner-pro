@@ -153,7 +153,8 @@ function SubtaskModal({
         alignItems: 'flex-end',
         justifyContent: 'center',
         background: 'rgba(0,0,0,0.68)',
-        padding: '0 14px var(--app-shell-main-bottom, calc(96px + env(safe-area-inset-bottom)))',
+        padding:
+          '0 14px max(14px, env(safe-area-inset-bottom), calc(var(--app-shell-main-bottom, 96px) - var(--kb-offset, 0px)))',
       }}
     >
       <div
@@ -174,6 +175,7 @@ function SubtaskModal({
           {title}
         </span>
         <textarea
+          className="field-input field-input--textarea"
           autoFocus
           ref={(node) => {
             if (!node) return;
@@ -189,16 +191,6 @@ function SubtaskModal({
           placeholder="Підзадача"
           rows={1}
           style={{
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid var(--glass-stroke)',
-            borderRadius: 14,
-            padding: '12px 14px',
-            fontSize: 15,
-            color: 'var(--txt-main)',
-            outline: 'none',
-            resize: 'none',
-            fontFamily: 'inherit',
-            lineHeight: 1.5,
             minHeight: 108,
             maxHeight: 'min(52dvh, 420px)',
             overflowY: 'auto',
