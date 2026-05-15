@@ -163,6 +163,7 @@ textarea:focus {
 
   position: relative;
   height: 100dvh;
+  padding-top: var(--sat);
   max-width: 100%;
   overflow: hidden;
 
