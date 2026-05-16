@@ -3,7 +3,7 @@ import { UA_DAYS_FULL, UA_MONTHS, toISO } from '../lib/date';
 import { getMotionPermissionState } from '../lib/motionPermission';
 import { useTasks } from './Hooks';
 
-type ModeId = 'calm' | 'focus' | 'motion' | 'silence' | 'night' | 'recovery';
+type ModeId = 'focus' | 'motion' | 'silence' | 'night' | 'recovery';
 
 type ModeDef = {
   id: ModeId;
@@ -15,7 +15,6 @@ type ModeDef = {
 };
 
 const MODES: ModeDef[] = [
-  { id: 'calm',     label: 'Спокій',      tagline: 'Легкий ритм без шуму.', accent: '232, 196, 116', glow: 0.45, speed: 18 },
   { id: 'focus',    label: 'Фокус',       tagline: 'Один чіткий напрям.',   accent: '245, 197, 92',  glow: 0.65, speed: 14 },
   { id: 'motion',   label: 'Рух',         tagline: 'День у динаміці.',      accent: '248, 220, 138', glow: 0.70, speed: 10 },
   { id: 'silence',  label: 'Тиша',        tagline: 'Менше сигналів.',       accent: '210, 180, 110', glow: 0.35, speed: 22 },
@@ -44,7 +43,7 @@ function resolveModeByDay(date: Date, taskCount: number): ModeId {
   if (minutes >= 22 * 60 || minutes < 6 * 60) return 'night';
   if (minutes >= 19 * 60) return 'silence';
   if (minutes >= 9 * 60) return 'focus';
-  return 'calm';
+  return 'focus';
 }
 
 export function LivingDaySphere() {
@@ -52,6 +51,7 @@ export function LivingDaySphere() {
   const { tasks } = useTasks();
   const [now, setNow] = useState(() => new Date());
   const [motionEnabled, setMotionEnabled] = useState(false);
+  const [overrideMode, setOverrideMode] = useState<ModeId | null>(null);
 
   useEffect(() => {
     setMotionEnabled(getMotionPermissionState() === 'granted');
@@ -123,7 +123,8 @@ export function LivingDaySphere() {
   const today = now;
   const todayISO = toISO(today);
   const todayTaskCount = tasks.filter((task) => task.date === todayISO).length;
-  const mode = resolveModeByDay(today, todayTaskCount);
+  const autoMode = resolveModeByDay(today, todayTaskCount);
+  const mode = overrideMode ?? autoMode;
   const dateLabel = `${UA_DAYS_FULL[today.getDay()]}, ${today.getDate()} ${UA_MONTHS[today.getMonth()].toLocaleLowerCase('uk-UA')}`;
   const [weekdayLabel, monthDayLabel] = dateLabel.split(', ');
   const currentMode = MODES.find((m) => m.id === mode) ?? MODES[1];
@@ -160,12 +161,42 @@ export function LivingDaySphere() {
           <div className="lds-angel-shadow" />
         </div>
       </div>
+      <div className="lds-debug">
+        <button
+          type="button"
+          onClick={() => setOverrideMode(null)}
+          data-active={overrideMode === null}
+        >
+          Auto
+        </button>
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => setOverrideMode(m.id)}
+            data-active={overrideMode === m.id}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
 
 const LDS_STYLES = `
+@property --lds-anim-scale { syntax: '<number>'; initial-value: 1; inherits: true; }
+@property --lds-anim-bright { syntax: '<number>'; initial-value: 1; inherits: true; }
+@property --lds-anim-contrast { syntax: '<number>'; initial-value: 1; inherits: true; }
+@property --lds-anim-saturate { syntax: '<number>'; initial-value: 1; inherits: true; }
+@property --lds-anim-x { syntax: '<length>'; initial-value: 0px; inherits: true; }
+@property --lds-anim-y { syntax: '<length>'; initial-value: 0px; inherits: true; }
+@property --lds-anim-rot { syntax: '<angle>'; initial-value: 0deg; inherits: true; }
+
 .living-day-sphere {
+  --lds-base-bright: 0.96;
+  --lds-base-contrast: 1.06;
+  --lds-base-saturate: 1.12;
   position: relative;
   margin-top: 14px;
   border-radius: 26px;
@@ -305,11 +336,17 @@ const LDS_STYLES = `
 .lds-angel-depth {
   opacity: var(--angel-depth);
   transform:
-    translate3d(calc(8px - var(--lds-tx) * 3px), calc(9px - var(--lds-ty) * 2px), -24px)
+    translate3d(
+      calc(8px - var(--lds-tx) * 3px + var(--lds-anim-x, 0px)),
+      calc(9px - var(--lds-ty) * 2px + var(--lds-anim-y, 0px)),
+      -24px
+    )
     rotateX(calc(var(--lds-ty) * -4deg))
-    rotateY(calc(var(--lds-tx) * 5deg));
+    rotateY(calc(var(--lds-tx) * 5deg))
+    rotate(var(--lds-anim-rot, 0deg))
+    scale(var(--lds-anim-scale, 1));
   filter:
-    brightness(0.20)
+    brightness(calc(0.20 * var(--lds-anim-bright, 1)))
     sepia(1)
     saturate(1.8)
     hue-rotate(346deg)
@@ -319,23 +356,22 @@ const LDS_STYLES = `
 .lds-angel-img {
   z-index: 2;
   transform:
-    translate3d(calc(var(--lds-tx) * 8px), calc(var(--lds-ty) * 8px), 0)
-    rotateX(calc(var(--lds-ty) * -7deg))
-    rotateY(calc(var(--lds-tx) * 9deg));
-  filter:
-    saturate(1.12)
-    contrast(1.06)
-    brightness(0.96)
-    drop-shadow(0 18px 22px rgba(0, 0, 0, 0.58))
-    drop-shadow(0 0 18px rgba(var(--lds-accent), calc(var(--lds-glow) * 0.32)));
-  transition: transform 0.42s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.42s ease;
-}
-.living-day-sphere:hover .lds-angel-img {
-  transform:
-    translate3d(calc(var(--lds-tx) * 8px), calc(var(--lds-ty) * 8px - 2px), 0)
+    translate3d(
+      calc(var(--lds-tx) * 8px + var(--lds-anim-x, 0px)),
+      calc(var(--lds-ty) * 8px + var(--lds-anim-y, 0px)),
+      0
+    )
     rotateX(calc(var(--lds-ty) * -7deg))
     rotateY(calc(var(--lds-tx) * 9deg))
-    scale(1.025);
+    rotate(var(--lds-anim-rot, 0deg))
+    scale(var(--lds-anim-scale, 1));
+  filter:
+    saturate(calc(var(--lds-base-saturate) * var(--lds-anim-saturate, 1)))
+    contrast(calc(var(--lds-base-contrast) * var(--lds-anim-contrast, 1)))
+    brightness(calc(var(--lds-base-bright) * var(--lds-anim-bright, 1)))
+    drop-shadow(0 18px 22px rgba(0, 0, 0, 0.58))
+    drop-shadow(0 0 18px rgba(var(--lds-accent), calc(var(--lds-glow) * 0.32)));
+  transition: filter 0.42s ease;
 }
 .lds-angel-shadow {
   left: 18%;
@@ -348,104 +384,297 @@ const LDS_STYLES = `
   filter: blur(6px);
   transform: translate3d(calc(var(--lds-tx) * -4px), calc(var(--lds-ty) * 2px), -30px);
 }
+.living-day-sphere[data-mode="night"] {
+  --lds-base-bright: 0.74;
+  --lds-base-saturate: 0.92;
+  --lds-base-contrast: 1.10;
+}
 .living-day-sphere[data-mode="night"] .lds-angel-img {
-  filter:
-    saturate(0.92)
-    contrast(1.10)
-    brightness(0.76)
-    drop-shadow(0 20px 24px rgba(0, 0, 0, 0.68))
-    drop-shadow(0 0 12px rgba(var(--lds-accent), 0.16));
+  animation: lds-night-float 10s ease-in-out infinite;
+}
+.living-day-sphere[data-mode="night"] .lds-angel-depth {
+  animation: lds-night-float-depth 10s ease-in-out infinite;
+}
+.living-day-sphere[data-mode="night"] .lds-angel-orbit {
+  inset: auto;
+  top: -6%;
+  right: 8%;
+  width: 20%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate3d(0, 0, -80px);
+  background:
+    radial-gradient(circle at 50% 50%,
+      rgba(var(--lds-accent), 1) 0%,
+      rgba(var(--lds-accent), 1) 60%,
+      rgba(var(--lds-accent), 0.7) 82%,
+      rgba(var(--lds-accent), 0.18) 96%,
+      transparent 100%);
+  opacity: 0.95;
+  filter: drop-shadow(0 0 6px rgba(var(--lds-accent), 0.35));
 }
 .living-day-sphere[data-mode="night"] .lds-mode-fx {
-  background:
-    radial-gradient(circle at 76% 24%, rgba(214, 181, 104, 0.32) 0%, rgba(214, 181, 104, 0.18) 10%, transparent 11%),
-    radial-gradient(ellipse at 32% 38%, rgba(86, 70, 44, 0.25) 0%, transparent 34%),
-    radial-gradient(ellipse at 66% 64%, rgba(0, 0, 0, 0.52) 0%, transparent 42%);
-  filter: blur(7px);
-  animation: lds-night-drift 34s linear infinite;
-}
-.living-day-sphere[data-mode="calm"] .lds-mode-fx {
-  inset: 8% 14% 12%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(var(--lds-accent), 0.10) 0%, transparent 58%),
-    repeating-radial-gradient(circle at 50% 50%, transparent 0 12px, rgba(var(--lds-accent), 0.12) 13px, transparent 15px),
-    radial-gradient(circle at 22% 34%, rgba(255, 232, 168, 0.34) 0 1px, transparent 2px),
-    radial-gradient(circle at 60% 22%, rgba(255, 232, 168, 0.26) 0 1px, transparent 2px),
-    radial-gradient(circle at 74% 68%, rgba(255, 232, 168, 0.20) 0 1px, transparent 2px);
   overflow: hidden;
-  animation: lds-calm-particles 36s linear infinite;
+  transform: translate3d(calc(var(--lds-tx) * -5px), calc(var(--lds-ty) * -4px), -140px);
+  background:
+    radial-gradient(circle at 22% 32%, rgba(var(--lds-accent), 0.85) 0 0.8px, transparent 1.6px),
+    radial-gradient(circle at 72% 24%, rgba(var(--lds-accent), 0.72) 0 0.7px, transparent 1.4px),
+    radial-gradient(circle at 48% 70%, rgba(var(--lds-accent), 0.85) 0 0.9px, transparent 1.7px),
+    radial-gradient(circle at 84% 58%, rgba(var(--lds-accent), 0.66) 0 0.7px, transparent 1.4px),
+    radial-gradient(circle at 14% 78%, rgba(var(--lds-accent), 0.80) 0 0.8px, transparent 1.6px),
+    radial-gradient(circle at 60% 14%, rgba(var(--lds-accent), 0.62) 0 0.6px, transparent 1.3px);
+  filter: blur(0.4px);
+  opacity: 0.9;
+  animation: lds-night-twinkle 5.4s ease-in-out infinite;
+}
+.living-day-sphere[data-mode="night"] .lds-mode-fx::before,
+.living-day-sphere[data-mode="night"] .lds-mode-fx::after {
+  content: '';
+  position: absolute;
+  left: -100%;
+  right: 0;
+  pointer-events: none;
+  background-repeat: repeat-x;
+  filter: blur(3px);
+}
+.living-day-sphere[data-mode="night"] .lds-mode-fx::before {
+  top: 14%;
+  height: 18%;
+  background-image:
+    radial-gradient(ellipse 14% 70% at 10% 50%, rgba(var(--lds-accent), 0.40) 0%, transparent 78%),
+    radial-gradient(ellipse 18% 80% at 32% 55%, rgba(var(--lds-accent), 0.36) 0%, transparent 80%),
+    radial-gradient(ellipse 12% 60% at 56% 50%, rgba(var(--lds-accent), 0.30) 0%, transparent 75%);
+  background-size: 50% 100%;
+  animation: lds-drift-x 32s linear infinite;
+}
+.living-day-sphere[data-mode="night"] .lds-mode-fx::after {
+  top: 30%;
+  height: 14%;
+  background-image:
+    radial-gradient(ellipse 15% 75% at 18% 55%, rgba(var(--lds-accent), 0.32) 0%, transparent 78%),
+    radial-gradient(ellipse 12% 65% at 42% 50%, rgba(var(--lds-accent), 0.28) 0%, transparent 76%),
+    radial-gradient(ellipse 16% 70% at 70% 55%, rgba(var(--lds-accent), 0.30) 0%, transparent 78%);
+  background-size: 40% 100%;
+  filter: blur(3.6px);
+  animation: lds-drift-x 48s linear infinite;
+  animation-delay: -22s;
+}
+.living-day-sphere[data-mode="focus"] {
+  --lds-base-bright: 1.0;
+  --lds-base-saturate: 1.16;
+  --lds-base-contrast: 1.10;
+}
+.living-day-sphere[data-mode="focus"] .lds-angel-img {
+  animation: lds-focus-pulse 3.6s ease-in-out infinite;
 }
 .living-day-sphere[data-mode="focus"] .lds-angel-depth {
-  opacity: 0.78;
-  transform:
-    translate3d(calc(10px - var(--lds-tx) * 3px), calc(11px - var(--lds-ty) * 2px), -28px)
-    rotateX(calc(var(--lds-ty) * -4deg))
-    rotateY(calc(var(--lds-tx) * 5deg));
+  opacity: 0.8;
 }
 .living-day-sphere[data-mode="focus"] .lds-angel-orbit {
-  opacity: 0.72;
+  opacity: 0.74;
   background:
-    radial-gradient(circle, transparent 47%, rgba(var(--lds-accent), 0.22) 48%, transparent 50%),
+    radial-gradient(circle, transparent 47%, rgba(var(--lds-accent), 0.24) 48%, transparent 50%),
     radial-gradient(circle, transparent 62%, rgba(var(--lds-accent), 0.16) 63%, transparent 65%),
     radial-gradient(circle, transparent 75%, rgba(var(--lds-accent), 0.08) 76%, transparent 78%);
+  animation: lds-focus-spin 22s linear infinite;
 }
-.living-day-sphere[data-mode="motion"] .lds-mode-fx {
-  inset: 8% 14% 12%;
+.living-day-sphere[data-mode="focus"] .lds-mode-fx {
+  inset: 22% 26%;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 50%, rgba(var(--lds-accent), 0.14) 0%, transparent 58%),
-    repeating-radial-gradient(circle at 50% 50%, transparent 0 12px, rgba(var(--lds-accent), 0.16) 13px, transparent 15px),
-    radial-gradient(circle at 24% 70%, rgba(255, 232, 168, 0.34) 0 1px, transparent 2px),
-    radial-gradient(circle at 56% 76%, rgba(255, 232, 168, 0.28) 0 1px, transparent 2px),
-    radial-gradient(circle at 78% 62%, rgba(255, 232, 168, 0.22) 0 1px, transparent 2px);
-  overflow: hidden;
-  animation: lds-motion-particles-up 12s linear infinite;
+    conic-gradient(from 0deg, transparent 0deg, rgba(var(--lds-accent), 0.32) 24deg, transparent 52deg);
+  filter: blur(9px);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  animation: lds-focus-beam 5.4s linear infinite;
+}
+.living-day-sphere[data-mode="motion"] {
+  --lds-base-bright: 1.05;
+  --lds-base-saturate: 1.28;
+  --lds-base-contrast: 1.10;
 }
 .living-day-sphere[data-mode="motion"] .lds-angel-img {
-  filter:
-    saturate(1.16)
-    contrast(1.08)
-    brightness(1)
-    drop-shadow(0 20px 22px rgba(0, 0, 0, 0.58))
-    drop-shadow(0 0 22px rgba(var(--lds-accent), 0.36));
+  animation: lds-motion-fly 3.6s ease-in-out infinite;
 }
-.living-day-sphere[data-mode="silence"] .lds-mode-fx {
-  background:
-    repeating-linear-gradient(90deg, transparent 0 17px, rgba(222, 198, 142, 0.14) 18px, transparent 19px),
-    radial-gradient(circle, transparent 58%, rgba(var(--lds-accent), 0.10) 59%, transparent 61%);
-  opacity: 0.16;
+.living-day-sphere[data-mode="motion"] .lds-angel-depth {
+  animation: lds-motion-fly-depth 3.6s ease-in-out infinite;
+}
+.living-day-sphere[data-mode="motion"] .lds-mode-fx {
+  inset: 0;
+  overflow: hidden;
+  background: none;
+  opacity: 1;
+  animation: none;
+}
+.living-day-sphere[data-mode="motion"] .lds-mode-fx::before,
+.living-day-sphere[data-mode="motion"] .lds-mode-fx::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -100%;
+  bottom: 0;
+  pointer-events: none;
+  background-repeat: repeat-y;
+}
+.living-day-sphere[data-mode="motion"] .lds-mode-fx::before {
+  background-image:
+    radial-gradient(circle at 14% 8%,  rgba(var(--lds-accent), 1)    0 2.6px, transparent 3.6px),
+    radial-gradient(circle at 38% 22%, rgba(var(--lds-accent), 0.92) 0 2.2px, transparent 3.2px),
+    radial-gradient(circle at 70% 14%, rgba(var(--lds-accent), 0.96) 0 2.4px, transparent 3.4px),
+    radial-gradient(circle at 22% 44%, rgba(var(--lds-accent), 0.88) 0 2px,   transparent 3px),
+    radial-gradient(circle at 56% 38%, rgba(var(--lds-accent), 0.94) 0 2.5px, transparent 3.5px),
+    radial-gradient(circle at 86% 32%, rgba(var(--lds-accent), 0.85) 0 1.8px, transparent 2.8px),
+    radial-gradient(circle at 32% 68%, rgba(var(--lds-accent), 0.92) 0 2.3px, transparent 3.3px),
+    radial-gradient(circle at 64% 78%, rgba(var(--lds-accent), 0.96) 0 2.4px, transparent 3.4px),
+    radial-gradient(circle at 90% 88%, rgba(var(--lds-accent), 0.82) 0 2px,   transparent 3px);
+  background-size: 100% 50%;
+  animation: lds-motion-rise 2.6s linear infinite;
+}
+.living-day-sphere[data-mode="motion"] .lds-mode-fx::after {
+  background-image:
+    radial-gradient(circle at 26% 12%, rgba(var(--lds-accent), 0.78) 0 1.3px, transparent 2px),
+    radial-gradient(circle at 52% 28%, rgba(var(--lds-accent), 0.72) 0 1.1px, transparent 1.8px),
+    radial-gradient(circle at 78% 18%, rgba(var(--lds-accent), 0.80) 0 1.4px, transparent 2.1px),
+    radial-gradient(circle at 16% 50%, rgba(var(--lds-accent), 0.74) 0 1.2px, transparent 1.9px),
+    radial-gradient(circle at 46% 62%, rgba(var(--lds-accent), 0.78) 0 1.3px, transparent 2px),
+    radial-gradient(circle at 84% 56%, rgba(var(--lds-accent), 0.72) 0 1.1px, transparent 1.8px),
+    radial-gradient(circle at 28% 84%, rgba(var(--lds-accent), 0.80) 0 1.4px, transparent 2.1px),
+    radial-gradient(circle at 68% 92%, rgba(var(--lds-accent), 0.76) 0 1.2px, transparent 1.9px);
+  background-size: 100% 40%;
+  animation: lds-motion-rise 4.2s linear infinite;
+}
+.living-day-sphere[data-mode="silence"] {
+  --lds-base-bright: 0.78;
+  --lds-base-saturate: 0.86;
+  --lds-base-contrast: 1.06;
 }
 .living-day-sphere[data-mode="silence"] .lds-angel-img {
-  filter:
-    saturate(0.86)
-    contrast(1.06)
-    brightness(0.70)
-    drop-shadow(0 18px 24px rgba(0, 0, 0, 0.68))
-    drop-shadow(0 0 8px rgba(var(--lds-accent), 0.12));
+  animation: lds-silence-fade 12s ease-in-out infinite;
+}
+.living-day-sphere[data-mode="silence"] .lds-angel-depth {
+  opacity: 0.5;
+}
+.living-day-sphere[data-mode="silence"] .lds-angel-orbit {
+  opacity: 0;
+}
+.living-day-sphere[data-mode="silence"] .lds-mode-fx {
+  inset: 0;
+  overflow: hidden;
+  background: none;
+  opacity: 1;
+  animation: none;
+}
+.living-day-sphere[data-mode="silence"] .lds-mode-fx::before,
+.living-day-sphere[data-mode="silence"] .lds-mode-fx::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -100%;
+  right: 0;
+  pointer-events: none;
+  background-repeat: repeat-x;
+}
+.living-day-sphere[data-mode="silence"] .lds-mode-fx::before {
+  background-image:
+    radial-gradient(circle at 6% 22%,  rgba(var(--lds-accent), 0.62) 0 1.4px, transparent 2.2px),
+    radial-gradient(circle at 18% 48%, rgba(var(--lds-accent), 0.55) 0 1.1px, transparent 1.8px),
+    radial-gradient(circle at 28% 18%, rgba(var(--lds-accent), 0.60) 0 1.3px, transparent 2px),
+    radial-gradient(circle at 38% 62%, rgba(var(--lds-accent), 0.52) 0 1px,   transparent 1.6px),
+    radial-gradient(circle at 46% 32%, rgba(var(--lds-accent), 0.58) 0 1.2px, transparent 1.9px),
+    radial-gradient(circle at 56% 76%, rgba(var(--lds-accent), 0.54) 0 1.1px, transparent 1.8px),
+    radial-gradient(circle at 66% 14%, rgba(var(--lds-accent), 0.60) 0 1.3px, transparent 2px),
+    radial-gradient(circle at 78% 54%, rgba(var(--lds-accent), 0.56) 0 1.2px, transparent 1.9px),
+    radial-gradient(circle at 88% 28%, rgba(var(--lds-accent), 0.58) 0 1.2px, transparent 1.9px),
+    radial-gradient(circle at 96% 70%, rgba(var(--lds-accent), 0.54) 0 1.1px, transparent 1.8px);
+  background-size: 50% 100%;
+  animation: lds-drift-x 22s linear infinite;
+}
+.living-day-sphere[data-mode="silence"] .lds-mode-fx::after {
+  background-image:
+    radial-gradient(circle at 10% 38%, rgba(var(--lds-accent), 0.40) 0 0.9px, transparent 1.4px),
+    radial-gradient(circle at 26% 70%, rgba(var(--lds-accent), 0.42) 0 0.8px, transparent 1.3px),
+    radial-gradient(circle at 42% 12%, rgba(var(--lds-accent), 0.38) 0 0.9px, transparent 1.4px),
+    radial-gradient(circle at 58% 46%, rgba(var(--lds-accent), 0.44) 0 0.8px, transparent 1.3px),
+    radial-gradient(circle at 74% 82%, rgba(var(--lds-accent), 0.40) 0 0.9px, transparent 1.4px),
+    radial-gradient(circle at 90% 24%, rgba(var(--lds-accent), 0.42) 0 0.8px, transparent 1.3px);
+  background-size: 40% 100%;
+  animation: lds-drift-x 34s linear infinite;
+}
+.living-day-sphere[data-mode="recovery"] {
+  --lds-base-bright: 0.95;
+  --lds-base-saturate: 1.06;
+  --lds-base-contrast: 1.04;
+}
+.living-day-sphere[data-mode="recovery"] .lds-angel-img {
+  animation: lds-recovery-breathe 9s ease-in-out infinite;
+}
+.living-day-sphere[data-mode="recovery"] .lds-angel-depth {
+  animation: lds-recovery-breathe 9s ease-in-out infinite;
 }
 .living-day-sphere[data-mode="recovery"] .lds-mode-fx {
+  inset: 12% 20%;
+  border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 48%, rgba(var(--lds-accent), 0.28) 0%, transparent 28%),
-    radial-gradient(circle at 50% 48%, transparent 38%, rgba(var(--lds-accent), 0.15) 39%, transparent 48%);
-  animation: lds-recovery-breath 9s ease-in-out infinite;
+    radial-gradient(circle, rgba(var(--lds-accent), 0.36) 0%, rgba(var(--lds-accent), 0.18) 22%, transparent 50%),
+    radial-gradient(circle, transparent 56%, rgba(var(--lds-accent), 0.22) 58%, transparent 62%);
+  filter: blur(2px);
+  animation: lds-recovery-heartbeat 9s ease-in-out infinite;
 }
 .living-day-sphere[data-mode="recovery"] .lds-angel-stage::before {
-  animation: lds-recovery-breath 10s ease-in-out infinite;
+  animation: lds-recovery-heartbeat 9s ease-in-out infinite;
 }
 
-@keyframes lds-night-drift {
-  to { transform: translate3d(calc(var(--lds-tx) * -5px + 18px), calc(var(--lds-ty) * -4px), -60px); }
+@keyframes lds-focus-pulse {
+  0%, 100% { --lds-anim-bright: 0.96; --lds-anim-contrast: 1; }
+  50%      { --lds-anim-bright: 1.10; --lds-anim-contrast: 1.06; }
 }
-@keyframes lds-calm-particles {
-  to { background-position: 0 0, 0 0, 90px 90px, 124px 124px, 160px 160px; }
+@keyframes lds-focus-spin {
+  to { transform: rotateX(66deg) rotateZ(360deg); }
 }
-@keyframes lds-motion-particles-up {
-  to { background-position: 0 0, 0 0, 0 -120px, 0 -170px, 0 -220px; }
+@keyframes lds-focus-beam {
+  to { transform: rotate(360deg); }
 }
-@keyframes lds-recovery-breath {
-  0%, 100% { transform: scale(0.96); opacity: 0.30; }
-  50% { transform: scale(1.05); opacity: 0.58; }
+@keyframes lds-motion-fly {
+  0%, 100% { --lds-anim-y: 0px;  --lds-anim-rot: -2.4deg; --lds-anim-scale: 1; }
+  50%      { --lds-anim-y: -7px; --lds-anim-rot: 2.4deg;  --lds-anim-scale: 1.045; }
+}
+@keyframes lds-motion-fly-depth {
+  0%, 100% { --lds-anim-y: 0px;  --lds-anim-rot: -1deg; }
+  50%      { --lds-anim-y: -2px; --lds-anim-rot: 1deg; }
+}
+@keyframes lds-motion-rise {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-50%); }
+}
+@keyframes lds-silence-fade {
+  0%, 100% { --lds-anim-bright: 0.92; }
+  50%      { --lds-anim-bright: 1.06; }
+}
+@keyframes lds-drift-x {
+  from { transform: translateX(0); }
+  to   { transform: translateX(50%); }
+}
+@keyframes lds-night-float {
+  0%, 100% { --lds-anim-y: 0px; }
+  50%      { --lds-anim-y: -4px; }
+}
+@keyframes lds-night-float-depth {
+  0%, 100% { --lds-anim-y: 0px; }
+  50%      { --lds-anim-y: -2px; }
+}
+@keyframes lds-night-twinkle {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+@keyframes lds-recovery-breathe {
+  0%, 100% { --lds-anim-scale: 0.97; --lds-anim-bright: 0.94; }
+  50%      { --lds-anim-scale: 1.045; --lds-anim-bright: 1.08; }
+}
+@keyframes lds-recovery-heartbeat {
+  0%, 30%, 100% { transform: scale(0.92); opacity: 0.4; }
+  10%, 20%      { transform: scale(1.06); opacity: 0.72; }
 }
 @media (min-width: 640px) {
   .living-day-sphere { padding: 22px; }
@@ -477,10 +706,45 @@ const LDS_STYLES = `
 
 @media (prefers-reduced-motion: reduce) {
   .lds-mode-fx,
-  .living-day-sphere[data-mode="recovery"] .lds-angel-stage::before {
+  .lds-angel-orbit,
+  .living-day-sphere[data-mode="recovery"] .lds-angel-stage::before,
+  .living-day-sphere .lds-angel-img,
+  .living-day-sphere .lds-angel-depth {
     animation: none;
   }
   .lds-angel-stage,
   .lds-angel-img { transition: none; }
+}
+.lds-debug {
+  position: relative;
+  z-index: 3;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(var(--lds-accent), 0.22);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.lds-debug button {
+  appearance: none;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(var(--lds-accent), 0.22);
+  color: rgba(235, 209, 147, 0.78);
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 160ms ease-out, border-color 160ms ease-out, color 160ms ease-out;
+}
+.lds-debug button:hover {
+  border-color: rgba(var(--lds-accent), 0.5);
+  color: rgb(245, 220, 160);
+}
+.lds-debug button[data-active="true"] {
+  background: rgba(var(--lds-accent), 0.18);
+  border-color: rgba(var(--lds-accent), 0.62);
+  color: rgb(247, 223, 160);
 }
 `;
