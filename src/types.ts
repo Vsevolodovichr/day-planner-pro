@@ -9,6 +9,7 @@ export type Task = {
   time?: string;
   repeat?: 'none' | 'daily' | 'weekdays' | 'weekly' | 'monthly' | 'yearly' | 'flexible';
   autoMove?: boolean;
+  autoMoveMode?: 'next_day' | 'next_full_moon';
   contact?: string;
   color?: string;
   plannerOrder?: number;

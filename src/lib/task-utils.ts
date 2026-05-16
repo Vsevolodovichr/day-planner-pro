@@ -1,6 +1,23 @@
 import type { Task } from '../types';
-import { toISO } from './date';
 import { uid } from './storage';
+
+const KYIV_TIME_ZONE = 'Europe/Kyiv';
+const AUTO_MOVE_CUTOFF_MINUTES = 23 * 60 + 45;
+const FULL_MOON_DATES = [
+  '2026-05-31',
+  '2026-06-30',
+  '2026-07-29',
+  '2026-08-28',
+  '2026-09-26',
+  '2026-10-26',
+  '2026-11-24',
+  '2026-12-24',
+  '2027-01-22',
+  '2027-02-21',
+  '2027-03-22',
+  '2027-04-21',
+  '2027-05-20',
+] as const;
 
 export function taskText(task: Task): string {
   return [task.title, task.note].filter(Boolean).join('\n');
@@ -139,18 +156,54 @@ export function reorderFolderTasks(
   });
 }
 
-export function applyAutoMove(tasks: Task[], todayISO = toISO(new Date())): Task[] {
+function addDaysISO(iso: string, days: number): string {
+  const [year, month, day] = iso.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + days);
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, '0'),
+    String(date.getUTCDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+function autoMoveBaseDate(now: Date | string): string {
+  if (typeof now === 'string') return now;
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: KYIV_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '00';
+  const iso = `${value('year')}-${value('month')}-${value('day')}`;
+  const minutes = Number(value('hour')) * 60 + Number(value('minute'));
+  return minutes >= AUTO_MOVE_CUTOFF_MINUTES ? addDaysISO(iso, 1) : iso;
+}
+
+function autoMoveTargetDate(mode: Task['autoMoveMode'], baseDate: string): string | undefined {
+  if (mode === 'next_full_moon') return FULL_MOON_DATES.find((date) => date >= baseDate);
+  return baseDate;
+}
+
+export function applyAutoMove(tasks: Task[], now: Date | string = new Date()): Task[] {
+  const baseDate = autoMoveBaseDate(now);
   let changed = false;
   const moved = tasks.map((task) => {
+    const targetDate = autoMoveTargetDate(task.autoMoveMode ?? 'next_day', baseDate);
     if (
       task.autoMove &&
       !task.completed &&
       task.date &&
-      task.date < todayISO &&
+      targetDate &&
+      task.date < targetDate &&
       (!task.repeat || task.repeat === 'none')
     ) {
       changed = true;
-      return { ...task, date: todayISO };
+      return { ...task, date: targetDate };
     }
     return task;
   });

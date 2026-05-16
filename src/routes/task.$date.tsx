@@ -27,6 +27,13 @@ const repeatOptions = [
 
 type RepeatValue = 'none' | (typeof repeatOptions)[number]['value'];
 
+const autoMoveOptions = [
+  { value: 'next_day', label: 'На наступний день' },
+  { value: 'next_full_moon', label: 'На наступне повнолуння' },
+] as const;
+
+type AutoMoveMode = (typeof autoMoveOptions)[number]['value'];
+
 const repeatLabels: Record<RepeatValue, string> = {
   none: 'Не повторювати',
   daily: 'Кожен день',
@@ -35,6 +42,11 @@ const repeatLabels: Record<RepeatValue, string> = {
   monthly: 'Кожен місяць',
   yearly: 'Щороку',
   flexible: 'Гнучкий графік',
+};
+
+const autoMoveLabels: Record<AutoMoveMode, string> = {
+  next_day: 'На наступний день',
+  next_full_moon: 'На наступне повнолуння',
 };
 
 const colorPresets = ['#F8DC8A', '#F2B5A6', '#8DC4DD', '#B8DBA0', '#C7B8E8', '#5A5A60'];
@@ -60,6 +72,8 @@ function TaskEditor() {
   const [repeat, setRepeat] = useState<RepeatValue>(existing?.repeat ?? 'none');
   const [showRepeatPicker, setShowRepeatPicker] = useState(false);
   const [autoMove, setAutoMove] = useState(Boolean(existing?.autoMove));
+  const [autoMoveMode, setAutoMoveMode] = useState<AutoMoveMode>(existing?.autoMoveMode ?? 'next_day');
+  const [showAutoMovePicker, setShowAutoMovePicker] = useState(false);
   const dayTasks = tasksForDate(tasks, date);
 
   useEffect(() => {
@@ -69,6 +83,7 @@ function TaskEditor() {
     setHasTime(Boolean(existing.time));
     setRepeat(existing.repeat ?? 'none');
     setAutoMove(Boolean(existing.autoMove));
+    setAutoMoveMode(existing.autoMoveMode ?? 'next_day');
     setColor(existing.color ?? '#F8DC8A');
   }, [existing]);
 
@@ -89,6 +104,15 @@ function TaskEditor() {
     } else {
       setRepeat('none');
       setShowRepeatPicker(false);
+    }
+  };
+
+  const toggleAutoMove = (checked: boolean) => {
+    setAutoMove(checked);
+    if (checked) {
+      setShowAutoMovePicker(true);
+    } else {
+      setShowAutoMovePicker(false);
     }
   };
 
@@ -202,6 +226,7 @@ function TaskEditor() {
       subtasks: existing?.subtasks ?? [],
       repeat,
       autoMove,
+      autoMoveMode: autoMove ? autoMoveMode : undefined,
       color,
       createdAt: existing?.createdAt ?? new Date().toISOString(),
       folderId: existing?.folderId,
@@ -402,8 +427,31 @@ function TaskEditor() {
         <Row
           icon={<Sparkles size={16} color="var(--gold-text)" />}
           label="Автоперенесення"
-          sublabel="Невиконані → на завтра"
-          right={<IOSSwitch checked={autoMove} onChange={setAutoMove} />}
+          sublabel={autoMove ? autoMoveLabels[autoMoveMode] : 'Вимкнено'}
+          right={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {autoMove && (
+                <button
+                  type="button"
+                  onClick={() => setShowAutoMovePicker(true)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--gold-text-strong)',
+                    fontSize: 13,
+                    maxWidth: 142,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {autoMoveLabels[autoMoveMode]}
+                </button>
+              )}
+              <IOSSwitch checked={autoMove} onChange={toggleAutoMove} />
+            </div>
+          }
         />
 
         {/* Color picker */}
@@ -629,6 +677,78 @@ function TaskEditor() {
             >
               Скасувати
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-move picker sheet */}
+      {showAutoMovePicker && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.45)',
+            backdropFilter: 'blur(10px)',
+          }}
+          onClick={() => setShowAutoMovePicker(false)}
+        >
+          <div
+            className="glass"
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: 'min(430px, calc(100vw - 24px))',
+              marginBottom: 14,
+              borderRadius: 28,
+              padding: '18px 16px 14px',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.45)',
+            }}
+          >
+            <div
+              style={{
+                padding: '6px 4px 12px',
+                textAlign: 'center',
+                fontSize: 16,
+                color: 'var(--txt-main)',
+                fontWeight: 500,
+              }}
+            >
+              Автоперенесення
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {autoMoveOptions.map((option) => {
+                const active = autoMoveMode === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setAutoMoveMode(option.value);
+                      setShowAutoMovePicker(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      border: 'none',
+                      borderRadius: 18,
+                      padding: '14px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: active ? 'var(--accent-14)' : 'rgba(255,255,255,0.04)',
+                      color: active ? 'var(--gold-text-strong)' : 'var(--txt-main)',
+                      fontSize: 15,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span>{option.label}</span>
+                    {active && <Check size={16} />}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

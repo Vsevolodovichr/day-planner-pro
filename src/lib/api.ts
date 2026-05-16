@@ -18,6 +18,7 @@ type ApiTask = {
   folder_id?: string | null;
   repeat_rule?: string | null;
   auto_move?: boolean | number | null;
+  auto_move_mode?: Task['autoMoveMode'] | null;
   color?: string | null;
   planner_order?: number | null;
   created_at?: string | null;
@@ -97,6 +98,7 @@ function taskFromApi(task: ApiTask): Task {
     subtasks: (task.subtasks ?? []).map(subtaskFromApi),
     repeat: (task.repeat_rule as Task['repeat']) ?? 'none',
     autoMove: Boolean(task.auto_move),
+    autoMoveMode: task.auto_move_mode ?? (task.auto_move ? 'next_day' : undefined),
     color: task.color ?? undefined,
     plannerOrder: task.planner_order ?? undefined,
     folderId: task.folder_id ?? undefined,
@@ -150,6 +152,7 @@ export async function createTask(task: Task): Promise<Task> {
       folder_id: task.folderId ?? null,
       repeat_rule: task.repeat ?? null,
       auto_move: task.autoMove ?? false,
+      auto_move_mode: task.autoMove ? task.autoMoveMode ?? 'next_day' : null,
       color: task.color ?? null,
       planner_order: task.plannerOrder ?? null,
     }),
@@ -171,6 +174,7 @@ export async function updateTask(task: Task): Promise<Task> {
       folder_id: task.folderId ?? null,
       repeat_rule: task.repeat ?? null,
       auto_move: task.autoMove ?? false,
+      auto_move_mode: task.autoMove ? task.autoMoveMode ?? 'next_day' : null,
       color: task.color ?? null,
       planner_order: task.plannerOrder ?? null,
     }),

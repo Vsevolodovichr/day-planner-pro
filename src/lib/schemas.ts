@@ -196,6 +196,7 @@ export const TaskSchema = z.object({
   folder_id: nullableString.optional(),
   repeat_rule: nullableString.optional(),
   auto_move: z.union([z.boolean(), z.number()]).optional(),
+  auto_move_mode: z.enum(['next_day', 'next_full_moon']).nullable().optional(),
   color: nullableString.optional(),
   planner_order: nullableNumber.optional(),
   created_at: z.string(),
