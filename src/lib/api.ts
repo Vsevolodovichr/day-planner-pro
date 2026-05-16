@@ -17,6 +17,9 @@ type ApiTask = {
   assigned_to?: string | null;
   folder_id?: string | null;
   repeat_rule?: string | null;
+  repeat_exceptions?: string[] | string | null;
+  recurrence_parent_id?: string | null;
+  recurrence_date?: string | null;
   auto_move?: boolean | number | null;
   auto_move_mode?: Task['autoMoveMode'] | null;
   color?: string | null;
@@ -64,6 +67,17 @@ function listPayload<T>(payload: ApiList<T>): T[] {
   return Array.isArray(payload) ? payload : (payload.data ?? []);
 }
 
+function stringArrayPayload(value: string[] | string | null | undefined): string[] | undefined {
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string');
+  if (!value) return undefined;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function requestPaged<T>(path: string): Promise<T[]> {
   const items: T[] = [];
   let cursor: string | null | undefined;
@@ -97,6 +111,9 @@ function taskFromApi(task: ApiTask): Task {
     completedAt: task.completed_at ?? undefined,
     subtasks: (task.subtasks ?? []).map(subtaskFromApi),
     repeat: (task.repeat_rule as Task['repeat']) ?? 'none',
+    repeatExceptions: stringArrayPayload(task.repeat_exceptions),
+    recurrenceParentId: task.recurrence_parent_id ?? undefined,
+    recurrenceDate: task.recurrence_date ?? undefined,
     autoMove: Boolean(task.auto_move),
     autoMoveMode: task.auto_move_mode ?? (task.auto_move ? 'next_day' : undefined),
     color: task.color ?? undefined,
@@ -151,6 +168,9 @@ export async function createTask(task: Task): Promise<Task> {
       due_date: dueDatePayload(task),
       folder_id: task.folderId ?? null,
       repeat_rule: task.repeat ?? null,
+      repeat_exceptions: task.repeatExceptions ?? null,
+      recurrence_parent_id: task.recurrenceParentId ?? null,
+      recurrence_date: task.recurrenceDate ?? null,
       auto_move: task.autoMove ?? false,
       auto_move_mode: task.autoMove ? task.autoMoveMode ?? 'next_day' : null,
       color: task.color ?? null,
@@ -173,6 +193,9 @@ export async function updateTask(task: Task): Promise<Task> {
       due_date: dueDatePayload(task),
       folder_id: task.folderId ?? null,
       repeat_rule: task.repeat ?? null,
+      repeat_exceptions: task.repeatExceptions ?? null,
+      recurrence_parent_id: task.recurrenceParentId ?? null,
+      recurrence_date: task.recurrenceDate ?? null,
       auto_move: task.autoMove ?? false,
       auto_move_mode: task.autoMove ? task.autoMoveMode ?? 'next_day' : null,
       color: task.color ?? null,

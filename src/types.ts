@@ -8,6 +8,9 @@ export type Task = {
   subtasks: Task[];
   time?: string;
   repeat?: 'none' | 'daily' | 'weekdays' | 'weekly' | 'monthly' | 'yearly' | 'flexible';
+  repeatExceptions?: string[];
+  recurrenceParentId?: string;
+  recurrenceDate?: string;
   autoMove?: boolean;
   autoMoveMode?: 'next_day' | 'next_full_moon';
   contact?: string;

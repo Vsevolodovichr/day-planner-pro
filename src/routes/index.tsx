@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useMemo, useRef, useState, type TouchEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
 import { toast } from 'sonner';
 import { AppShell } from '../components/AppShell';
 import { DayCard } from '../components/DayCard';
@@ -18,6 +18,12 @@ import { greetingByHour } from '../lib/theme';
 import { ChevronLeft, ChevronRight, Search, Bell } from 'lucide-react';
 
 export const Route = createFileRoute('/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    date:
+      typeof search.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(search.date)
+        ? search.date
+        : undefined,
+  }),
   head: () => ({
     meta: [
       { title: 'Мої Завдання — Список справ' },
@@ -199,7 +205,9 @@ export function Home() {
   const { notifications, markRead } = useUnreadNotifications();
   const navigate = useNavigate();
   const todayISO = toISO(new Date());
-  const [selectedDate, setSelectedDate] = useState(todayISO);
+  const { date } = Route.useSearch();
+  const homeDate = date ?? todayISO;
+  const [selectedDate, setSelectedDate] = useState(homeDate);
   const week = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
   const [selection, setSelection] = useState<string[]>([]);
   const [menuFor, setMenuFor] = useState<string | null>(null);
@@ -214,10 +222,16 @@ export function Home() {
 
   const today = new Date();
 
+  useEffect(() => {
+    setSelectedDate(homeDate);
+  }, [homeDate]);
+
   const shiftWeek = (delta: number) => {
     const next = new Date(selectedDate);
     next.setDate(next.getDate() + delta * 7);
-    setSelectedDate(toISO(next));
+    const nextDate = toISO(next);
+    setSelectedDate(nextDate);
+    navigate({ to: '/', search: { date: nextDate }, replace: true });
   };
 
   const handleWeekTouchStart = (event: TouchEvent<HTMLDivElement>) => {

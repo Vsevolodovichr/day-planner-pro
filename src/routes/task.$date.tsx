@@ -8,6 +8,7 @@ import { SortableTaskList } from '../components/SortableTaskList';
 import { useTasks } from '../components/Hooks';
 import { uid } from '../lib/storage';
 import { formatLong } from '../lib/date';
+import type { Task } from '../types';
 import {
   newSubtask,
   reorderTasksForDate,
@@ -51,6 +52,24 @@ const autoMoveLabels: Record<AutoMoveMode, string> = {
 
 const colorPresets = ['#F8DC8A', '#F2B5A6', '#8DC4DD', '#B8DBA0', '#C7B8E8', '#5A5A60'];
 
+type RecurrenceAction = { type: 'delete'; taskId: string } | { type: 'edit' };
+type RecurrenceScope = 'occurrence' | 'series';
+
+function isRepeatingTask(task?: Task): task is Task {
+  return Boolean(task?.repeat && task.repeat !== 'none');
+}
+
+function withRepeatException(task: Task, date: string): Task {
+  const repeatExceptions = task.repeatExceptions ?? [];
+  if (repeatExceptions.includes(date)) return task;
+  return { ...task, repeatExceptions: [...repeatExceptions, date] };
+}
+
+function withoutRepeatException(task: Task, date: string): Task {
+  if (!task.repeatExceptions?.includes(date)) return task;
+  return { ...task, repeatExceptions: task.repeatExceptions.filter((item) => item !== date) };
+}
+
 export const Route = createFileRoute('/task/$date')({
   validateSearch: (search: Record<string, unknown>) => ({
     id: typeof search.id === 'string' ? search.id : undefined,
@@ -64,16 +83,28 @@ function TaskEditor() {
   const navigate = useNavigate();
   const { tasks, save } = useTasks();
   const existing = tasks.find((task) => task.id === id);
+  const recurrenceParent = existing?.recurrenceParentId
+    ? tasks.find((task) => task.id === existing.recurrenceParentId)
+    : undefined;
+  const recurrenceBase = isRepeatingTask(existing)
+    ? existing
+    : isRepeatingTask(recurrenceParent)
+      ? recurrenceParent
+      : undefined;
+  const existingRepeat = existing?.recurrenceParentId && recurrenceParent
+    ? recurrenceParent.repeat ?? 'none'
+    : existing?.repeat ?? 'none';
   const [title, setTitle] = useState(existing ? taskText(existing) : '');
   const [time, setTime] = useState(existing?.time ?? '');
   const [color, setColor] = useState(existing?.color ?? '#F8DC8A');
   const [hasTime, setHasTime] = useState(Boolean(existing?.time));
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [repeat, setRepeat] = useState<RepeatValue>(existing?.repeat ?? 'none');
+  const [repeat, setRepeat] = useState<RepeatValue>(existingRepeat);
   const [showRepeatPicker, setShowRepeatPicker] = useState(false);
   const [autoMove, setAutoMove] = useState(Boolean(existing?.autoMove));
   const [autoMoveMode, setAutoMoveMode] = useState<AutoMoveMode>(existing?.autoMoveMode ?? 'next_day');
   const [showAutoMovePicker, setShowAutoMovePicker] = useState(false);
+  const [recurrenceAction, setRecurrenceAction] = useState<RecurrenceAction | null>(null);
   const dayTasks = tasksForDate(tasks, date);
 
   useEffect(() => {
@@ -81,11 +112,11 @@ function TaskEditor() {
     setTitle(taskText(existing));
     setTime(existing.time ?? '');
     setHasTime(Boolean(existing.time));
-    setRepeat(existing.repeat ?? 'none');
+    setRepeat(existing?.recurrenceParentId && recurrenceParent ? recurrenceParent.repeat ?? 'none' : existing.repeat ?? 'none');
     setAutoMove(Boolean(existing.autoMove));
     setAutoMoveMode(existing.autoMoveMode ?? 'next_day');
     setColor(existing.color ?? '#F8DC8A');
-  }, [existing]);
+  }, [existing, recurrenceParent]);
 
   const toggleTime = (checked: boolean) => {
     setHasTime(checked);
@@ -206,35 +237,113 @@ function TaskEditor() {
     save(tasks.map((task) => (task.id === taskId ? { ...task, date: nextDate } : task)));
   };
 
+  const deleteRecurringTask = (taskId: string, scope: RecurrenceScope) => {
+    const target = tasks.find((task) => task.id === taskId);
+    const parent = target?.recurrenceParentId
+      ? tasks.find((task) => task.id === target.recurrenceParentId)
+      : undefined;
+    const base = isRepeatingTask(target) ? target : isRepeatingTask(parent) ? parent : undefined;
+    if (!target || !base) return;
+
+    const nextTasks = scope === 'series'
+      ? tasks.filter((task) => task.id !== base.id && task.recurrenceParentId !== base.id)
+      : target.recurrenceParentId
+        ? tasks.filter((task) => task.id !== target.id)
+        : tasks.map((task) => (task.id === base.id ? withRepeatException(task, date) : task));
+
+    save(nextTasks);
+    if (
+      id === target.id ||
+      (scope === 'series' && id && (id === base.id || tasks.find((task) => task.id === id)?.recurrenceParentId === base.id))
+    ) {
+      navigate({ to: '/task/$date', params: { date } });
+    }
+  };
+
   const deleteTask = (taskId: string) => {
+    const task = tasks.find((item) => item.id === taskId);
+    const parent = task?.recurrenceParentId ? tasks.find((item) => item.id === task.recurrenceParentId) : undefined;
+    if (isRepeatingTask(task) || isRepeatingTask(parent)) {
+      setRecurrenceAction({ type: 'delete', taskId });
+      return;
+    }
     if (!window.confirm('Видалити завдання?')) return;
     save(tasks.filter((task) => task.id !== taskId));
     if (id === taskId) navigate({ to: '/task/$date', params: { date } });
   };
 
-  const submit = () => {
-    if (!title.trim()) return navigate({ to: '/' });
+  const submit = (scope?: RecurrenceScope) => {
+    if (!title.trim()) return navigate({ to: '/', search: { date } });
+
+    if (existing && recurrenceBase && !scope) {
+      setRecurrenceAction({ type: 'edit' });
+      return;
+    }
+
     const [firstLine = '', ...rest] = title.trim().split(/\r?\n/);
-    const next = {
-      id: existing?.id ?? uid(),
+    const buildTask = (source?: Task, taskDate = date): Task => ({
+      id: source?.id ?? uid(),
       title: firstLine.trim() || title.trim(),
       note: rest.join('\n').trim() || undefined,
-      date,
+      date: taskDate,
       time: hasTime && time ? time : undefined,
-      completed: existing?.completed ?? false,
-      completedAt: existing?.completedAt,
-      subtasks: existing?.subtasks ?? [],
+      completed: source?.completed ?? false,
+      completedAt: source?.completedAt,
+      subtasks: source?.subtasks ?? [],
       repeat,
       autoMove,
       autoMoveMode: autoMove ? autoMoveMode : undefined,
       color,
-      createdAt: existing?.createdAt ?? new Date().toISOString(),
-      folderId: existing?.folderId,
-    };
+      createdAt: source?.createdAt ?? new Date().toISOString(),
+      folderId: source?.folderId,
+      repeatExceptions: source?.repeatExceptions,
+      recurrenceParentId: source?.recurrenceParentId,
+      recurrenceDate: source?.recurrenceDate,
+    });
+
+    if (existing && recurrenceBase && scope === 'occurrence') {
+      const occurrence = {
+        ...buildTask(existing, date),
+        id: existing.recurrenceParentId ? existing.id : uid(),
+        repeat: 'none' as const,
+        repeatExceptions: undefined,
+        recurrenceParentId: recurrenceBase.id,
+        recurrenceDate: date,
+        createdAt: existing.recurrenceParentId ? existing.createdAt : new Date().toISOString(),
+      };
+      const updatedTasks = tasks.map((task) => {
+        if (task.id === recurrenceBase.id) return withRepeatException(task, date);
+        if (task.id === occurrence.id) return occurrence;
+        return task;
+      });
+      save(existing.recurrenceParentId ? updatedTasks : [...updatedTasks, occurrence]);
+      navigate({ to: '/', search: { date } });
+      return;
+    }
+
+    if (existing && recurrenceBase && scope === 'series') {
+      const series = {
+        ...buildTask(recurrenceBase, recurrenceBase.date ?? date),
+        id: recurrenceBase.id,
+        date: recurrenceBase.date,
+        repeatExceptions: recurrenceBase.repeatExceptions,
+        recurrenceParentId: recurrenceBase.recurrenceParentId,
+        recurrenceDate: recurrenceBase.recurrenceDate,
+      };
+      const nextSeries = existing.recurrenceParentId ? withoutRepeatException(series, date) : series;
+      const sourceTasks = existing.recurrenceParentId
+        ? tasks.filter((task) => task.id !== existing.id)
+        : tasks;
+      save(sourceTasks.map((task) => (task.id === recurrenceBase.id ? nextSeries : task)));
+      navigate({ to: '/', search: { date } });
+      return;
+    }
+
+    const next = buildTask(existing);
     save(
       existing ? tasks.map((task) => (task.id === existing.id ? next : task)) : [...tasks, next],
     );
-    navigate({ to: '/' });
+    navigate({ to: '/', search: { date } });
   };
 
   const topBtn: React.CSSProperties = {
@@ -263,11 +372,11 @@ function TaskEditor() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '14px',
+          padding: 'calc(env(safe-area-inset-top, 0px) + 18px) 14px 14px',
           background: 'linear-gradient(180deg, rgba(0,0,0,0.85) 70%, transparent 100%)',
         }}
       >
-        <button onClick={() => navigate({ to: '/' })} style={topBtn} aria-label="Назад">
+        <button onClick={() => navigate({ to: '/', search: { date } })} style={topBtn} aria-label="Назад">
           <ChevronLeft size={20} />
           <span className="gold-text" style={{ fontSize: 14, fontWeight: 500 }}>
             Назад
@@ -289,7 +398,7 @@ function TaskEditor() {
           <ChevronDown size={15} color="var(--txt-muted)" />
         </button>
         <button
-          onClick={submit}
+          onClick={() => submit()}
           style={{
             ...topBtn,
             background: 'var(--gold-shine)',
@@ -752,7 +861,129 @@ function TaskEditor() {
           </div>
         </div>
       )}
+
+      {recurrenceAction && (
+        <RecurrenceActionSheet
+          title={recurrenceAction.type === 'delete' ? 'Видалити повтор?' : 'Зберегти зміни?'}
+          onOccurrence={() => {
+            const action = recurrenceAction;
+            setRecurrenceAction(null);
+            if (action.type === 'delete') deleteRecurringTask(action.taskId, 'occurrence');
+            if (action.type === 'edit') submit('occurrence');
+          }}
+          onSeries={() => {
+            const action = recurrenceAction;
+            setRecurrenceAction(null);
+            if (action.type === 'delete') deleteRecurringTask(action.taskId, 'series');
+            if (action.type === 'edit') submit('series');
+          }}
+          onCancel={() => setRecurrenceAction(null)}
+        />
+      )}
     </AppShell>
+  );
+}
+
+function RecurrenceActionSheet({
+  title,
+  onOccurrence,
+  onSeries,
+  onCancel,
+}: {
+  title: string;
+  onOccurrence: () => void;
+  onSeries: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 60,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        background: 'rgba(0,0,0,0.68)',
+        padding: '0 16px 24px',
+      }}
+      onClick={onCancel}
+    >
+      <div
+        className="glass"
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: 400,
+          borderRadius: 24,
+          padding: 14,
+          background: 'rgba(18,18,20,0.96)',
+        }}
+      >
+        <div
+          style={{
+            padding: '6px 4px 12px',
+            textAlign: 'center',
+            fontSize: 16,
+            color: 'var(--txt-main)',
+            fontWeight: 500,
+          }}
+        >
+          {title}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <button
+            type="button"
+            onClick={onOccurrence}
+            style={{
+              height: 46,
+              width: '100%',
+              borderRadius: 14,
+              border: '1px solid var(--accent-45)',
+              background: 'linear-gradient(180deg, var(--accent-18) 0%, var(--accent-04) 100%)',
+              color: 'var(--gold-text-strong)',
+              fontSize: 15,
+              cursor: 'pointer',
+            }}
+          >
+            Цей повтор
+          </button>
+          <button
+            type="button"
+            onClick={onSeries}
+            style={{
+              height: 46,
+              width: '100%',
+              borderRadius: 14,
+              border: '1px solid var(--glass-stroke)',
+              background: 'rgba(255,255,255,0.05)',
+              color: 'var(--txt-main)',
+              fontSize: 15,
+              cursor: 'pointer',
+            }}
+          >
+            Усі повтори
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            marginTop: 12,
+            height: 44,
+            width: '100%',
+            borderRadius: 999,
+            border: '1px solid var(--glass-stroke)',
+            background: 'rgba(255,255,255,0.06)',
+            color: 'var(--gold-text-strong)',
+            fontSize: 15,
+            cursor: 'pointer',
+          }}
+        >
+          Скасувати
+        </button>
+      </div>
+    </div>
   );
 }
 

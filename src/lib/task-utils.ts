@@ -69,6 +69,7 @@ function monthDayKey(iso: string): string {
 
 export function taskOccursOnDate(task: Task, iso: string): boolean {
   if (!task.date) return false;
+  if (task.repeatExceptions?.includes(iso)) return false;
   if (task.date === iso) return true;
   if (!task.repeat || task.repeat === 'none' || iso < task.date) return false;
 
