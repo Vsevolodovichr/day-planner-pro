@@ -51,7 +51,6 @@ export function LivingDaySphere() {
   const { tasks } = useTasks();
   const [now, setNow] = useState(() => new Date());
   const [motionEnabled, setMotionEnabled] = useState(false);
-  const [overrideMode, setOverrideMode] = useState<ModeId | null>(null);
 
   useEffect(() => {
     setMotionEnabled(getMotionPermissionState() === 'granted');
@@ -124,7 +123,7 @@ export function LivingDaySphere() {
   const todayISO = toISO(today);
   const todayTaskCount = tasks.filter((task) => task.date === todayISO).length;
   const autoMode = resolveModeByDay(today, todayTaskCount);
-  const mode = overrideMode ?? autoMode;
+  const mode = autoMode;
   const dateLabel = `${UA_DAYS_FULL[today.getDay()]}, ${today.getDate()} ${UA_MONTHS[today.getMonth()].toLocaleLowerCase('uk-UA')}`;
   const [weekdayLabel, monthDayLabel] = dateLabel.split(', ');
   const currentMode = MODES.find((m) => m.id === mode) ?? MODES[1];
@@ -160,25 +159,6 @@ export function LivingDaySphere() {
           <img className="lds-angel-img" src={ANGEL_ASSET} alt="" />
           <div className="lds-angel-shadow" />
         </div>
-      </div>
-      <div className="lds-debug">
-        <button
-          type="button"
-          onClick={() => setOverrideMode(null)}
-          data-active={overrideMode === null}
-        >
-          Auto
-        </button>
-        {MODES.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            onClick={() => setOverrideMode(m.id)}
-            data-active={overrideMode === m.id}
-          >
-            {m.label}
-          </button>
-        ))}
       </div>
     </div>
   );
@@ -280,7 +260,7 @@ const LDS_STYLES = `
   perspective: 820px;
   transform-style: preserve-3d;
   transform: translate3d(calc(var(--lds-tx) * 3px), calc(var(--lds-ty) * 3px), 0);
-  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 3.8s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .lds-angel-stage::before {
   content: '';
@@ -371,7 +351,7 @@ const LDS_STYLES = `
     brightness(calc(var(--lds-base-bright) * var(--lds-anim-bright, 1)))
     drop-shadow(0 18px 22px rgba(0, 0, 0, 0.58))
     drop-shadow(0 0 18px rgba(var(--lds-accent), calc(var(--lds-glow) * 0.32)));
-  transition: filter 0.42s ease;
+  transition: filter 3.8s ease;
 }
 .lds-angel-shadow {
   left: 18%;
@@ -390,10 +370,10 @@ const LDS_STYLES = `
   --lds-base-contrast: 1.10;
 }
 .living-day-sphere[data-mode="night"] .lds-angel-img {
-  animation: lds-night-float 10s ease-in-out infinite;
+  animation: lds-night-float 120s ease-in-out infinite;
 }
 .living-day-sphere[data-mode="night"] .lds-angel-depth {
-  animation: lds-night-float-depth 10s ease-in-out infinite;
+  animation: lds-night-float-depth 120s ease-in-out infinite;
 }
 .living-day-sphere[data-mode="night"] .lds-angel-orbit {
   inset: auto;
@@ -425,7 +405,7 @@ const LDS_STYLES = `
     radial-gradient(circle at 60% 14%, rgba(var(--lds-accent), 0.62) 0 0.6px, transparent 1.3px);
   filter: blur(0.4px);
   opacity: 0.9;
-  animation: lds-night-twinkle 5.4s ease-in-out infinite;
+  animation: lds-night-twinkle 100s ease-in-out infinite;
 }
 .living-day-sphere[data-mode="night"] .lds-mode-fx::before,
 .living-day-sphere[data-mode="night"] .lds-mode-fx::after {
@@ -445,7 +425,7 @@ const LDS_STYLES = `
     radial-gradient(ellipse 18% 80% at 32% 55%, rgba(var(--lds-accent), 0.36) 0%, transparent 80%),
     radial-gradient(ellipse 12% 60% at 56% 50%, rgba(var(--lds-accent), 0.30) 0%, transparent 75%);
   background-size: 50% 100%;
-  animation: lds-drift-x 32s linear infinite;
+  animation: lds-drift-x 260s linear infinite;
 }
 .living-day-sphere[data-mode="night"] .lds-mode-fx::after {
   top: 30%;
@@ -456,7 +436,7 @@ const LDS_STYLES = `
     radial-gradient(ellipse 16% 70% at 70% 55%, rgba(var(--lds-accent), 0.30) 0%, transparent 78%);
   background-size: 40% 100%;
   filter: blur(3.6px);
-  animation: lds-drift-x 48s linear infinite;
+  animation: lds-drift-x 340s linear infinite;
   animation-delay: -22s;
 }
 .living-day-sphere[data-mode="focus"] {
@@ -465,7 +445,7 @@ const LDS_STYLES = `
   --lds-base-contrast: 1.10;
 }
 .living-day-sphere[data-mode="focus"] .lds-angel-img {
-  animation: lds-focus-pulse 3.6s ease-in-out infinite;
+  animation: lds-focus-pulse 120s ease-in-out infinite;
 }
 .living-day-sphere[data-mode="focus"] .lds-angel-depth {
   opacity: 0.8;
@@ -476,7 +456,7 @@ const LDS_STYLES = `
     radial-gradient(circle, transparent 47%, rgba(var(--lds-accent), 0.24) 48%, transparent 50%),
     radial-gradient(circle, transparent 62%, rgba(var(--lds-accent), 0.16) 63%, transparent 65%),
     radial-gradient(circle, transparent 75%, rgba(var(--lds-accent), 0.08) 76%, transparent 78%);
-  animation: lds-focus-spin 22s linear infinite;
+  animation: lds-focus-spin 420s linear infinite;
 }
 .living-day-sphere[data-mode="focus"] .lds-mode-fx {
   inset: 22% 26%;
@@ -486,7 +466,7 @@ const LDS_STYLES = `
   filter: blur(9px);
   opacity: 0.55;
   mix-blend-mode: screen;
-  animation: lds-focus-beam 5.4s linear infinite;
+  animation: lds-focus-beam 360s linear infinite;
 }
 .living-day-sphere[data-mode="motion"] {
   --lds-base-bright: 1.05;
@@ -494,10 +474,10 @@ const LDS_STYLES = `
   --lds-base-contrast: 1.10;
 }
 .living-day-sphere[data-mode="motion"] .lds-angel-img {
-  animation: lds-motion-fly 3.6s ease-in-out infinite;
+  animation: lds-motion-fly 120s ease-in-out infinite;
 }
 .living-day-sphere[data-mode="motion"] .lds-angel-depth {
-  animation: lds-motion-fly-depth 3.6s ease-in-out infinite;
+  animation: lds-motion-fly-depth 120s ease-in-out infinite;
 }
 .living-day-sphere[data-mode="motion"] .lds-mode-fx {
   inset: 0;
@@ -529,7 +509,7 @@ const LDS_STYLES = `
     radial-gradient(circle at 64% 78%, rgba(var(--lds-accent), 0.96) 0 2.4px, transparent 3.4px),
     radial-gradient(circle at 90% 88%, rgba(var(--lds-accent), 0.82) 0 2px,   transparent 3px);
   background-size: 100% 50%;
-  animation: lds-motion-rise 2.6s linear infinite;
+  animation: lds-motion-rise 240s linear infinite;
 }
 .living-day-sphere[data-mode="motion"] .lds-mode-fx::after {
   background-image:
@@ -542,7 +522,7 @@ const LDS_STYLES = `
     radial-gradient(circle at 28% 84%, rgba(var(--lds-accent), 0.80) 0 1.4px, transparent 2.1px),
     radial-gradient(circle at 68% 92%, rgba(var(--lds-accent), 0.76) 0 1.2px, transparent 1.9px);
   background-size: 100% 40%;
-  animation: lds-motion-rise 4.2s linear infinite;
+  animation: lds-motion-rise 320s linear infinite;
 }
 .living-day-sphere[data-mode="silence"] {
   --lds-base-bright: 0.78;
@@ -550,7 +530,7 @@ const LDS_STYLES = `
   --lds-base-contrast: 1.06;
 }
 .living-day-sphere[data-mode="silence"] .lds-angel-img {
-  animation: lds-silence-fade 12s ease-in-out infinite;
+  animation: lds-silence-fade 140s ease-in-out infinite;
 }
 .living-day-sphere[data-mode="silence"] .lds-angel-depth {
   opacity: 0.5;
@@ -589,7 +569,7 @@ const LDS_STYLES = `
     radial-gradient(circle at 88% 28%, rgba(var(--lds-accent), 0.58) 0 1.2px, transparent 1.9px),
     radial-gradient(circle at 96% 70%, rgba(var(--lds-accent), 0.54) 0 1.1px, transparent 1.8px);
   background-size: 50% 100%;
-  animation: lds-drift-x 22s linear infinite;
+  animation: lds-drift-x 280s linear infinite;
 }
 .living-day-sphere[data-mode="silence"] .lds-mode-fx::after {
   background-image:
@@ -600,7 +580,7 @@ const LDS_STYLES = `
     radial-gradient(circle at 74% 82%, rgba(var(--lds-accent), 0.40) 0 0.9px, transparent 1.4px),
     radial-gradient(circle at 90% 24%, rgba(var(--lds-accent), 0.42) 0 0.8px, transparent 1.3px);
   background-size: 40% 100%;
-  animation: lds-drift-x 34s linear infinite;
+  animation: lds-drift-x 360s linear infinite;
 }
 .living-day-sphere[data-mode="recovery"] {
   --lds-base-bright: 0.95;
@@ -608,10 +588,10 @@ const LDS_STYLES = `
   --lds-base-contrast: 1.04;
 }
 .living-day-sphere[data-mode="recovery"] .lds-angel-img {
-  animation: lds-recovery-breathe 9s ease-in-out infinite;
+  animation: lds-recovery-breathe 140s ease-in-out infinite;
 }
 .living-day-sphere[data-mode="recovery"] .lds-angel-depth {
-  animation: lds-recovery-breathe 9s ease-in-out infinite;
+  animation: lds-recovery-breathe 140s ease-in-out infinite;
 }
 .living-day-sphere[data-mode="recovery"] .lds-mode-fx {
   inset: 12% 20%;
@@ -620,15 +600,15 @@ const LDS_STYLES = `
     radial-gradient(circle, rgba(var(--lds-accent), 0.36) 0%, rgba(var(--lds-accent), 0.18) 22%, transparent 50%),
     radial-gradient(circle, transparent 56%, rgba(var(--lds-accent), 0.22) 58%, transparent 62%);
   filter: blur(2px);
-  animation: lds-recovery-heartbeat 9s ease-in-out infinite;
+  animation: lds-recovery-heartbeat 140s ease-in-out infinite;
 }
 .living-day-sphere[data-mode="recovery"] .lds-angel-stage::before {
-  animation: lds-recovery-heartbeat 9s ease-in-out infinite;
+  animation: lds-recovery-heartbeat 140s ease-in-out infinite;
 }
 
 @keyframes lds-focus-pulse {
-  0%, 100% { --lds-anim-bright: 0.96; --lds-anim-contrast: 1; }
-  50%      { --lds-anim-bright: 1.10; --lds-anim-contrast: 1.06; }
+  0%, 100% { --lds-anim-bright: 0.99; --lds-anim-contrast: 1; }
+  50%      { --lds-anim-bright: 1.02; --lds-anim-contrast: 1.01; }
 }
 @keyframes lds-focus-spin {
   to { transform: rotateX(66deg) rotateZ(360deg); }
@@ -637,20 +617,20 @@ const LDS_STYLES = `
   to { transform: rotate(360deg); }
 }
 @keyframes lds-motion-fly {
-  0%, 100% { --lds-anim-y: 0px;  --lds-anim-rot: -2.4deg; --lds-anim-scale: 1; }
-  50%      { --lds-anim-y: -7px; --lds-anim-rot: 2.4deg;  --lds-anim-scale: 1.045; }
+  0%, 100% { --lds-anim-y: 0px;  --lds-anim-rot: -0.35deg; --lds-anim-scale: 1; }
+  50%      { --lds-anim-y: -1px; --lds-anim-rot: 0.35deg;  --lds-anim-scale: 1.006; }
 }
 @keyframes lds-motion-fly-depth {
-  0%, 100% { --lds-anim-y: 0px;  --lds-anim-rot: -1deg; }
-  50%      { --lds-anim-y: -2px; --lds-anim-rot: 1deg; }
+  0%, 100% { --lds-anim-y: 0px;  --lds-anim-rot: -0.2deg; }
+  50%      { --lds-anim-y: -0.5px; --lds-anim-rot: 0.2deg; }
 }
 @keyframes lds-motion-rise {
   from { transform: translateY(0); }
   to   { transform: translateY(-50%); }
 }
 @keyframes lds-silence-fade {
-  0%, 100% { --lds-anim-bright: 0.92; }
-  50%      { --lds-anim-bright: 1.06; }
+  0%, 100% { --lds-anim-bright: 0.98; }
+  50%      { --lds-anim-bright: 1.01; }
 }
 @keyframes lds-drift-x {
   from { transform: translateX(0); }
@@ -658,23 +638,23 @@ const LDS_STYLES = `
 }
 @keyframes lds-night-float {
   0%, 100% { --lds-anim-y: 0px; }
-  50%      { --lds-anim-y: -4px; }
+  50%      { --lds-anim-y: -0.75px; }
 }
 @keyframes lds-night-float-depth {
   0%, 100% { --lds-anim-y: 0px; }
-  50%      { --lds-anim-y: -2px; }
+  50%      { --lds-anim-y: -0.5px; }
 }
 @keyframes lds-night-twinkle {
-  0%, 100% { opacity: 0.55; }
-  50%      { opacity: 1; }
+  0%, 100% { opacity: 0.82; }
+  50%      { opacity: 0.9; }
 }
 @keyframes lds-recovery-breathe {
-  0%, 100% { --lds-anim-scale: 0.97; --lds-anim-bright: 0.94; }
-  50%      { --lds-anim-scale: 1.045; --lds-anim-bright: 1.08; }
+  0%, 100% { --lds-anim-scale: 0.995; --lds-anim-bright: 0.99; }
+  50%      { --lds-anim-scale: 1.006; --lds-anim-bright: 1.015; }
 }
 @keyframes lds-recovery-heartbeat {
-  0%, 30%, 100% { transform: scale(0.92); opacity: 0.4; }
-  10%, 20%      { transform: scale(1.06); opacity: 0.72; }
+  0%, 30%, 100% { transform: scale(0.985); opacity: 0.42; }
+  10%, 20%      { transform: scale(1.01); opacity: 0.5; }
 }
 @media (min-width: 640px) {
   .living-day-sphere { padding: 22px; }
@@ -714,37 +694,5 @@ const LDS_STYLES = `
   }
   .lds-angel-stage,
   .lds-angel-img { transition: none; }
-}
-.lds-debug {
-  position: relative;
-  z-index: 3;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px dashed rgba(var(--lds-accent), 0.22);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.lds-debug button {
-  appearance: none;
-  background: rgba(0, 0, 0, 0.42);
-  border: 1px solid rgba(var(--lds-accent), 0.22);
-  color: rgba(235, 209, 147, 0.78);
-  padding: 4px 11px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  cursor: pointer;
-  transition: background 160ms ease-out, border-color 160ms ease-out, color 160ms ease-out;
-}
-.lds-debug button:hover {
-  border-color: rgba(var(--lds-accent), 0.5);
-  color: rgb(245, 220, 160);
-}
-.lds-debug button[data-active="true"] {
-  background: rgba(var(--lds-accent), 0.18);
-  border-color: rgba(var(--lds-accent), 0.62);
-  color: rgb(247, 223, 160);
 }
 `;
