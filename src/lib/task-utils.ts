@@ -1,8 +1,10 @@
 import type { Task } from '../types';
+import { toISO } from './date';
 import { uid } from './storage';
 
 const KYIV_TIME_ZONE = 'Europe/Kyiv';
 const AUTO_MOVE_CUTOFF_MINUTES = 23 * 60 + 45;
+const TASK_ORDERS_STORAGE_KEY = 'mz_task_orders_v2';
 const FULL_MOON_DATES = [
   '2026-05-31',
   '2026-06-30',
@@ -18,6 +20,59 @@ const FULL_MOON_DATES = [
   '2027-04-21',
   '2027-05-20',
 ] as const;
+
+type PlannerTaskEntry = { task: Task; index: number };
+
+function taskOrderScope(kind: 'date' | 'folder' | 'general', value?: string): string {
+  if (kind === 'general') return 'general';
+  return `${kind}:${value ?? ''}`;
+}
+
+function readStoredTaskOrders(): Record<string, string[]> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(TASK_ORDERS_STORAGE_KEY) ?? '{}');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed)
+        .filter(
+          (entry): entry is [string, unknown[]] =>
+            typeof entry[0] === 'string' && Array.isArray(entry[1]),
+        )
+        .map(([key, value]) => [key, value.filter((id): id is string => typeof id === 'string')]),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function storedTaskOrder(scope: string): string[] {
+  return readStoredTaskOrders()[scope] ?? [];
+}
+
+function saveStoredTaskOrder(scope: string, orderedIds: string[]) {
+  if (typeof window === 'undefined') return;
+  const orders = readStoredTaskOrders();
+  orders[scope] = orderedIds;
+  window.localStorage.setItem(TASK_ORDERS_STORAGE_KEY, JSON.stringify(orders));
+}
+
+function sortPlannerTaskEntries(entries: PlannerTaskEntry[], orderedIds: string[]): PlannerTaskEntry[] {
+  const storedOrder = new Map(orderedIds.map((id, index) => [id, index + 1]));
+  return entries.sort((a, b) => {
+    const storedA = storedOrder.get(a.task.id);
+    const storedB = storedOrder.get(b.task.id);
+    if (storedA !== undefined || storedB !== undefined) {
+      if (storedA === undefined) return 1;
+      if (storedB === undefined) return -1;
+      return storedA === storedB ? a.index - b.index : storedA - storedB;
+    }
+
+    const orderA = typeof a.task.plannerOrder === 'number' ? a.task.plannerOrder : a.index;
+    const orderB = typeof b.task.plannerOrder === 'number' ? b.task.plannerOrder : b.index;
+    return orderA === orderB ? a.index - b.index : orderA - orderB;
+  });
+}
 
 export function taskText(task: Task): string {
   return [task.title, task.note].filter(Boolean).join('\n');
@@ -85,20 +140,19 @@ export function taskOccursOnDate(task: Task, iso: string): boolean {
 }
 
 export function tasksForDate(tasks: Task[], iso: string): Task[] {
-  return tasks
-    .map((task, index) => ({ task, index }))
-    .filter(({ task }) => taskOccursOnDate(task, iso))
-    .sort((a, b) => {
-      const orderA = typeof a.task.plannerOrder === 'number' ? a.task.plannerOrder : a.index;
-      const orderB = typeof b.task.plannerOrder === 'number' ? b.task.plannerOrder : b.index;
-      return orderA === orderB ? a.index - b.index : orderA - orderB;
-    })
+  return sortPlannerTaskEntries(
+    tasks
+      .map((task, index) => ({ task, index }))
+      .filter(({ task }) => taskOccursOnDate(task, iso)),
+    storedTaskOrder(taskOrderScope('date', iso)),
+  )
     .map(({ task }) => task);
 }
 
 export function reorderTasksForDate(tasks: Task[], iso: string, orderedIds: string[]): Task[] {
   const ordered = new Map(orderedIds.map((id, index) => [id, index + 1]));
   const dayTaskIds = new Set(tasksForDate(tasks, iso).map((task) => task.id));
+  saveStoredTaskOrder(taskOrderScope('date', iso), orderedIds);
 
   return tasks.map((task) => {
     if (!dayTaskIds.has(task.id)) return task;
@@ -108,20 +162,19 @@ export function reorderTasksForDate(tasks: Task[], iso: string, orderedIds: stri
 }
 
 export function generalTasksForPlanner(tasks: Task[]): Task[] {
-  return tasks
-    .map((task, index) => ({ task, index }))
-    .filter(({ task }) => !task.date && !task.folderId)
-    .sort((a, b) => {
-      const orderA = typeof a.task.plannerOrder === 'number' ? a.task.plannerOrder : a.index;
-      const orderB = typeof b.task.plannerOrder === 'number' ? b.task.plannerOrder : b.index;
-      return orderA === orderB ? a.index - b.index : orderA - orderB;
-    })
+  return sortPlannerTaskEntries(
+    tasks
+      .map((task, index) => ({ task, index }))
+      .filter(({ task }) => !task.date && !task.folderId),
+    storedTaskOrder(taskOrderScope('general')),
+  )
     .map(({ task }) => task);
 }
 
 export function reorderGeneralTasks(tasks: Task[], orderedIds: string[]): Task[] {
   const ordered = new Map(orderedIds.map((id, index) => [id, index + 1]));
   const generalTaskIds = new Set(generalTasksForPlanner(tasks).map((task) => task.id));
+  saveStoredTaskOrder(taskOrderScope('general'), orderedIds);
 
   return tasks.map((task) => {
     if (!generalTaskIds.has(task.id)) return task;
@@ -131,14 +184,12 @@ export function reorderGeneralTasks(tasks: Task[], orderedIds: string[]): Task[]
 }
 
 export function folderTasksForPlanner(tasks: Task[], folderId: string): Task[] {
-  return tasks
-    .map((task, index) => ({ task, index }))
-    .filter(({ task }) => task.folderId === folderId)
-    .sort((a, b) => {
-      const orderA = typeof a.task.plannerOrder === 'number' ? a.task.plannerOrder : a.index;
-      const orderB = typeof b.task.plannerOrder === 'number' ? b.task.plannerOrder : b.index;
-      return orderA === orderB ? a.index - b.index : orderA - orderB;
-    })
+  return sortPlannerTaskEntries(
+    tasks
+      .map((task, index) => ({ task, index }))
+      .filter(({ task }) => task.folderId === folderId),
+    storedTaskOrder(taskOrderScope('folder', folderId)),
+  )
     .map(({ task }) => task);
 }
 
@@ -149,6 +200,7 @@ export function reorderFolderTasks(
 ): Task[] {
   const ordered = new Map(orderedIds.map((id, index) => [id, index + 1]));
   const folderTaskIds = new Set(folderTasksForPlanner(tasks, folderId).map((task) => task.id));
+  saveStoredTaskOrder(taskOrderScope('folder', folderId), orderedIds);
 
   return tasks.map((task) => {
     if (!folderTaskIds.has(task.id)) return task;

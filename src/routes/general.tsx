@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Check,
   ChevronDown,
@@ -101,6 +101,14 @@ function EditModal({
   onSave: (next: Task) => void;
 }) {
   const [text, setText] = useState(taskText(task));
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      textareaRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   return (
     <div
@@ -113,7 +121,8 @@ function EditModal({
         alignItems: 'flex-end',
         justifyContent: 'center',
         background: 'rgba(0,0,0,0.55)',
-        padding: '0 14px var(--app-shell-main-bottom, calc(96px + env(safe-area-inset-bottom)))',
+        padding:
+          '0 14px calc(var(--app-shell-main-bottom, calc(96px + env(safe-area-inset-bottom))) + var(--kb-offset, 0px))',
       }}
     >
       <div
@@ -163,10 +172,12 @@ function EditModal({
         <textarea
           autoFocus
           ref={(node) => {
+            textareaRef.current = node;
             if (!node) return;
             node.style.height = 'auto';
             node.style.height = `${node.scrollHeight}px`;
           }}
+          onFocus={(event) => event.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' })}
           value={text}
           onChange={(e) => {
             setText(e.target.value);
@@ -253,6 +264,14 @@ function SubtaskModal({
   initialValue?: string;
 }) {
   const [title, setTitle] = useState(initialValue);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      textareaRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   return (
     <div
@@ -265,7 +284,8 @@ function SubtaskModal({
         alignItems: 'flex-end',
         justifyContent: 'center',
         background: 'rgba(0,0,0,0.68)',
-        padding: '0 14px var(--app-shell-main-bottom, calc(96px + env(safe-area-inset-bottom)))',
+        padding:
+          '0 14px calc(var(--app-shell-main-bottom, calc(96px + env(safe-area-inset-bottom))) + var(--kb-offset, 0px))',
       }}
     >
       <div
@@ -288,10 +308,12 @@ function SubtaskModal({
         <textarea
           autoFocus
           ref={(node) => {
+            textareaRef.current = node;
             if (!node) return;
             node.style.height = 'auto';
             node.style.height = `${node.scrollHeight}px`;
           }}
+          onFocus={(event) => event.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' })}
           value={title}
           onChange={(e) => {
             setTitle(e.target.value);

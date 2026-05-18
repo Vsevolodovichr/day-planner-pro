@@ -36,6 +36,10 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+function swipeThreshold(actionRailWidth: number) {
+  return Math.min(SWIPE_THRESHOLD, actionRailWidth * 0.6);
+}
+
 function actionStyle(key: string, tone: SwipeAction['tone']) {
   if (tone === 'danger') {
     return {
@@ -226,10 +230,12 @@ function SwipeableTaskCard({
     setDragging(false);
 
     if (gestureRef.current === 'horizontal') {
+      const leftThreshold = swipeThreshold(maxSwipeLeft);
+      const rightThreshold = swipeThreshold(maxSwipeRight);
       const nextOffset =
-        offsetRef.current <= -SWIPE_THRESHOLD && maxSwipeLeft > 0
+        offsetRef.current <= -leftThreshold && maxSwipeLeft > 0
           ? -maxSwipeLeft
-          : offsetRef.current >= SWIPE_THRESHOLD && maxSwipeRight > 0
+          : offsetRef.current >= rightThreshold && maxSwipeRight > 0
             ? maxSwipeRight
             : 0;
       if (nextOffset !== 0) window.dispatchEvent(new CustomEvent(SWIPE_OPEN_EVENT, { detail: id }));

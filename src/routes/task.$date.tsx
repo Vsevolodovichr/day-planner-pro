@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ChevronLeft, Check, ChevronDown, Clock, Repeat2, Sparkles, Palette } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
@@ -105,7 +105,15 @@ function TaskEditor() {
   const [autoMoveMode, setAutoMoveMode] = useState<AutoMoveMode>(existing?.autoMoveMode ?? 'next_day');
   const [showAutoMovePicker, setShowAutoMovePicker] = useState(false);
   const [recurrenceAction, setRecurrenceAction] = useState<RecurrenceAction | null>(null);
+  const titleInputRef = useRef<HTMLTextAreaElement | null>(null);
   const dayTasks = tasksForDate(tasks, date);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      titleInputRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [id]);
 
   useEffect(() => {
     if (!existing) return;
@@ -412,7 +420,14 @@ function TaskEditor() {
         </button>
       </div>
 
-      <div style={{ padding: '72px 14px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div
+        style={{
+          padding: '72px 14px calc(24px + var(--kb-offset, 0px))',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+        }}
+      >
         {dayTasks.length > 0 && (
           <div className="glass" style={{ borderRadius: 18, overflow: 'hidden' }}>
             <SortableTaskList
@@ -461,9 +476,11 @@ function TaskEditor() {
             }}
           />
           <textarea
+            ref={titleInputRef}
             autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            onFocus={(event) => event.currentTarget.scrollIntoView({ block: 'center', behavior: 'smooth' })}
             placeholder="Завдання"
             rows={6}
             className="field-input field-input--bare field-input--textarea"
