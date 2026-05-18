@@ -2,6 +2,10 @@ export type MotionPermissionState = 'unsupported' | 'prompt' | 'granted' | 'deni
 
 const MOTION_PERMISSION_STATE_KEY = 'angel.motionPermissionState';
 const MOTION_PERMISSION_GRANTED_AT_KEY = 'angel.motionPermissionGrantedAt';
+const ANGEL_ANIMATION_TEMPO_KEY = 'angel.animationTempo';
+const MIN_ANGEL_ANIMATION_TEMPO = 70;
+const MAX_ANGEL_ANIMATION_TEMPO = 130;
+const DEFAULT_ANGEL_ANIMATION_TEMPO = 100;
 
 type DeviceOrientationEventWithPermission = typeof DeviceOrientationEvent & {
   requestPermission?: () => Promise<'granted' | 'denied' | 'default'>;
@@ -11,6 +15,11 @@ function getDeviceOrientationEvent(): DeviceOrientationEventWithPermission | und
   if (typeof window === 'undefined') return undefined;
   return (window as Window & { DeviceOrientationEvent?: DeviceOrientationEventWithPermission })
     .DeviceOrientationEvent;
+}
+
+function clampAngelAnimationTempo(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_ANGEL_ANIMATION_TEMPO;
+  return Math.min(MAX_ANGEL_ANIMATION_TEMPO, Math.max(MIN_ANGEL_ANIMATION_TEMPO, value));
 }
 
 function saveMotionPermissionState(state: MotionPermissionState) {
@@ -41,6 +50,29 @@ export function getMotionPermissionState(): MotionPermissionState {
   if (!DOE) return 'unsupported';
   if (typeof DOE.requestPermission !== 'function') return 'granted';
   return readStoredState() ?? 'prompt';
+}
+
+export function loadAngelAnimationTempo(): number {
+  if (typeof window === 'undefined') return DEFAULT_ANGEL_ANIMATION_TEMPO;
+  try {
+    const stored = window.localStorage.getItem(ANGEL_ANIMATION_TEMPO_KEY);
+    if (stored === null) return DEFAULT_ANGEL_ANIMATION_TEMPO;
+    return clampAngelAnimationTempo(Number(stored));
+  } catch {
+    return DEFAULT_ANGEL_ANIMATION_TEMPO;
+  }
+}
+
+export function saveAngelAnimationTempo(value: number): number {
+  const next = clampAngelAnimationTempo(value);
+  if (typeof window !== 'undefined') {
+    try {
+      window.localStorage.setItem(ANGEL_ANIMATION_TEMPO_KEY, String(next));
+    } catch {
+      /* ignore */
+    }
+  }
+  return next;
 }
 
 export async function requestMotionPermission(): Promise<MotionPermissionState> {

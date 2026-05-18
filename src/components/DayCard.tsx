@@ -88,13 +88,13 @@ export function DayCard({
           cursor: 'pointer',
           color: 'inherit',
           textAlign: 'left',
-          minHeight: 72,
+          minHeight: 86,
         }}
       >
         {/* Date column */}
         <div
           style={{
-            width: 66,
+            width: 70,
             flexShrink: 0,
             background: dateColBg,
             borderRight: '1px solid rgba(255,255,255,0.08)',
@@ -102,7 +102,7 @@ export function DayCard({
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '8px 4px 8px',
+            padding: '9px 4px 9px',
           }}
         >
           <span
@@ -118,7 +118,7 @@ export function DayCard({
           </span>
           <span
             style={{
-              fontSize: 30,
+              fontSize: 32,
               fontWeight: 300,
               lineHeight: 1,
               letterSpacing: -2,
@@ -150,7 +150,7 @@ export function DayCard({
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
-            padding: '0 12px',
+            padding: '0 14px',
           }}
         >
           <div

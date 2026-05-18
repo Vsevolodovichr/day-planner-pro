@@ -182,7 +182,10 @@ export async function createTask(task: Task): Promise<Task> {
   return { ...createdTask, subtasks: task.subtasks };
 }
 
-export async function updateTask(task: Task): Promise<Task> {
+export async function updateTask(
+  task: Task,
+  options: { syncSubtasks?: boolean } = {},
+): Promise<Task> {
   const updated = await requestJson<ApiTask>(`/api/tasks/${task.id}`, {
     method: 'PATCH',
     body: JSON.stringify({
@@ -202,7 +205,7 @@ export async function updateTask(task: Task): Promise<Task> {
       planner_order: task.plannerOrder ?? null,
     }),
   });
-  await syncSubtasks(task.id, task.subtasks);
+  if (options.syncSubtasks !== false) await syncSubtasks(task.id, task.subtasks);
   return { ...taskFromApi({ ...updated, ...task }), completedAt: task.completedAt, subtasks: task.subtasks };
 }
 
@@ -314,6 +317,10 @@ async function updateSubtask(taskId: string, subtask: Task): Promise<Task> {
   return subtaskFromApi(updated);
 }
 
+function subtaskChanged(current: Task, next: Task): boolean {
+  return current.title !== next.title || current.completed !== next.completed;
+}
+
 async function deleteSubtask(taskId: string, subtaskId: string): Promise<void> {
   await requestJson<{ success: boolean }>(`/api/tasks/${taskId}/subtasks/${subtaskId}`, {
     method: 'DELETE',
@@ -322,7 +329,7 @@ async function deleteSubtask(taskId: string, subtaskId: string): Promise<void> {
 
 async function syncSubtasks(taskId: string, subtasks: Task[]): Promise<void> {
   const current = await getSubtasks(taskId).catch(() => []);
-  const currentIds = new Set(current.map((subtask) => subtask.id));
+  const currentById = new Map(current.map((subtask) => [subtask.id, subtask]));
   const nextIds = new Set(subtasks.map((subtask) => subtask.id));
   await Promise.all(
     current
@@ -330,10 +337,10 @@ async function syncSubtasks(taskId: string, subtasks: Task[]): Promise<void> {
       .map((subtask) => deleteSubtask(taskId, subtask.id)),
   );
   await Promise.all(
-    subtasks.map((subtask) =>
-      currentIds.has(subtask.id)
-        ? updateSubtask(taskId, subtask)
-        : createSubtask(taskId, subtask),
-    ),
+    subtasks.map((subtask) => {
+      const existing = currentById.get(subtask.id);
+      if (!existing) return createSubtask(taskId, subtask);
+      return subtaskChanged(existing, subtask) ? updateSubtask(taskId, subtask) : Promise.resolve();
+    }),
   );
 }

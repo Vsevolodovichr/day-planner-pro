@@ -218,8 +218,8 @@ textarea:focus {
 }
 
 .fornastya-phone {
-  --app-shell-main-bottom: calc(96px + env(safe-area-inset-bottom));
-  --app-shell-action-bottom: calc(96px + env(safe-area-inset-bottom));
+  --app-shell-main-bottom: calc(88px + env(safe-area-inset-bottom));
+  --app-shell-action-bottom: calc(88px + env(safe-area-inset-bottom));
 
   position: relative;
   min-height: 100dvh;
@@ -254,7 +254,7 @@ textarea:focus {
 .app-bottom-nav {
   position: fixed;
   left: 50%;
-  bottom: calc(14px + env(safe-area-inset-bottom) + var(--kb-offset, 0px));
+  bottom: calc(6px + env(safe-area-inset-bottom) + var(--kb-offset, 0px));
   width: calc(100% - 24px);
   max-width: 406px;
   z-index: 40;

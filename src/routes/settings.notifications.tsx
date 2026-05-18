@@ -5,7 +5,9 @@ import { toast } from 'sonner';
 import { AppShell } from '../components/AppShell';
 import {
   getMotionPermissionState,
+  loadAngelAnimationTempo,
   requestMotionPermission,
+  saveAngelAnimationTempo,
   type MotionPermissionState,
 } from '../lib/motionPermission';
 import { storage } from '../lib/storage';
@@ -17,6 +19,7 @@ export const Route = createFileRoute('/settings/notifications')({ component: Not
 function NotifSettings() {
   const [accentColor, setAccentColor] = useState<string>(loadAccent());
   const [motionPermission, setMotionPermission] = useState<MotionPermissionState>('prompt');
+  const [animationTempo, setAnimationTempo] = useState(() => loadAngelAnimationTempo());
   const [s, setS] = useState<NotificationSettings>({
     enabled: false,
     silent: true,
@@ -52,6 +55,10 @@ function NotifSettings() {
     if (next === 'granted') toast.success('Рух увімкнено');
     if (next === 'denied') toast.error('Дозвіл не надано');
     if (next === 'unsupported') toast.error('На цьому пристрої рух недоступний');
+  };
+
+  const updateAnimationTempo = (value: number) => {
+    setAnimationTempo(saveAngelAnimationTempo(value));
   };
 
   const motionStatus =
@@ -190,6 +197,33 @@ function NotifSettings() {
               />
             }
           />
+          <div style={{ padding: '0 0 14px 40px' }}>
+            <input
+              type="range"
+              min={70}
+              max={130}
+              step={5}
+              value={animationTempo}
+              onChange={(e) => updateAnimationTempo(Number(e.target.value))}
+              aria-label="Темп анімації ангела"
+              style={{
+                width: '100%',
+                accentColor: 'var(--gold-text)',
+              }}
+            />
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginTop: 4,
+                fontSize: 12,
+                color: 'var(--txt-dim)',
+              }}
+            >
+              <span>повільно</span>
+              <span>швидко</span>
+            </div>
+          </div>
         </section>
 
         {/* Notifications group */}

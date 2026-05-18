@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { UA_DAYS_FULL, UA_MONTHS, toISO } from '../lib/date';
-import { getMotionPermissionState } from '../lib/motionPermission';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { toISO } from '../lib/date';
+import { getMotionPermissionState, loadAngelAnimationTempo } from '../lib/motionPermission';
 import { useTasks } from './Hooks';
 
 type ModeId = 'focus' | 'motion' | 'silence' | 'night' | 'recovery';
@@ -46,11 +46,18 @@ function resolveModeByDay(date: Date, taskCount: number): ModeId {
   return 'focus';
 }
 
-export function LivingDaySphere() {
+type LivingDaySphereProps = {
+  greeting: string;
+  name: string;
+  actions?: ReactNode;
+};
+
+export function LivingDaySphere({ greeting, name, actions }: LivingDaySphereProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const { tasks } = useTasks();
   const [now, setNow] = useState(() => new Date());
   const [motionEnabled, setMotionEnabled] = useState(false);
+  const [animationTempo] = useState(() => loadAngelAnimationTempo());
 
   useEffect(() => {
     setMotionEnabled(getMotionPermissionState() === 'granted');
@@ -124,9 +131,8 @@ export function LivingDaySphere() {
   const todayTaskCount = tasks.filter((task) => task.date === todayISO).length;
   const autoMode = resolveModeByDay(today, todayTaskCount);
   const mode = autoMode;
-  const dateLabel = `${UA_DAYS_FULL[today.getDay()]}, ${today.getDate()} ${UA_MONTHS[today.getMonth()].toLocaleLowerCase('uk-UA')}`;
-  const [weekdayLabel, monthDayLabel] = dateLabel.split(', ');
   const currentMode = MODES.find((m) => m.id === mode) ?? MODES[1];
+  const tempoScale = 100 / animationTempo;
 
   return (
     <div
@@ -139,6 +145,15 @@ export function LivingDaySphere() {
         '--lds-accent': currentMode.accent,
         '--lds-glow': String(currentMode.glow),
         '--lds-speed': `${currentMode.speed}s`,
+        '--lds-tempo-scale': String(tempoScale),
+        '--lds-duration-100': `${100 * tempoScale}s`,
+        '--lds-duration-120': `${120 * tempoScale}s`,
+        '--lds-duration-140': `${140 * tempoScale}s`,
+        '--lds-duration-260': `${260 * tempoScale}s`,
+        '--lds-duration-280': `${280 * tempoScale}s`,
+        '--lds-duration-340': `${340 * tempoScale}s`,
+        '--lds-duration-360': `${360 * tempoScale}s`,
+        '--lds-duration-420': `${420 * tempoScale}s`,
         '--angel-tint': currentMode.accent,
         '--angel-depth': mode === 'focus' ? '0.72' : mode === 'night' || mode === 'silence' ? '0.62' : '0.56',
         '--angel-fx-opacity': mode === 'silence' ? '0.18' : mode === 'night' ? '0.32' : '0.46',
@@ -147,10 +162,11 @@ export function LivingDaySphere() {
       <style>{LDS_STYLES}</style>
       <div className="lds-content">
         <div className="lds-text">
-          <div className="lds-date">
-            <span className="lds-date-main">{monthDayLabel}</span>
-            <span className="lds-date-weekday">{weekdayLabel}</span>
+          <div className="lds-greeting">
+            <span className="lds-greeting-main">{greeting},</span>
+            <span className="lds-greeting-name">{name}</span>
           </div>
+          {actions ? <div className="lds-actions">{actions}</div> : null}
         </div>
         <div className="lds-angel-stage" data-mode={mode} aria-hidden="true">
           <div className="lds-mode-fx" />
@@ -226,28 +242,44 @@ const LDS_STYLES = `
   gap: 16px;
   min-width: 0;
 }
-.lds-text { flex: 1; min-width: 0; }
-.lds-date {
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: 0;
-  line-height: 1.28;
-  background: linear-gradient(135deg, #f7dfa0 0%, #d2aa52 32%, #92713a 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+.lds-text {
+  align-self: stretch;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+}
+.lds-greeting {
+  min-width: 0;
+  color: var(--gold-text-strong);
   filter: drop-shadow(0 0 12px rgba(var(--lds-accent), 0.12));
 }
-.lds-date span {
+.lds-greeting-main,
+.lds-greeting-name {
   display: block;
 }
-.lds-date-weekday {
-  margin-top: 2px;
-  font-size: 13px;
+.lds-greeting-main {
+  font-size: clamp(17px, 4vw, 22px);
   font-weight: 500;
-  color: rgba(235, 209, 147, 0.58);
-  -webkit-text-fill-color: rgba(235, 209, 147, 0.58);
+  line-height: 1.12;
+  color: var(--gold-text);
+}
+.lds-greeting-name {
+  margin-top: 4px;
+  font-size: clamp(27px, 7vw, 38px);
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  line-height: 1.1;
+  color: var(--gold-text-strong);
+}
+.lds-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 36px;
 }
 
 .lds-angel-stage {
@@ -370,10 +402,10 @@ const LDS_STYLES = `
   --lds-base-contrast: 1.10;
 }
 .living-day-sphere[data-mode="night"] .lds-angel-img {
-  animation: lds-night-float 120s ease-in-out infinite;
+  animation: lds-night-float var(--lds-duration-120) ease-in-out infinite;
 }
 .living-day-sphere[data-mode="night"] .lds-angel-depth {
-  animation: lds-night-float-depth 120s ease-in-out infinite;
+  animation: lds-night-float-depth var(--lds-duration-120) ease-in-out infinite;
 }
 .living-day-sphere[data-mode="night"] .lds-angel-orbit {
   inset: auto;
@@ -405,7 +437,7 @@ const LDS_STYLES = `
     radial-gradient(circle at 60% 14%, rgba(var(--lds-accent), 0.62) 0 0.6px, transparent 1.3px);
   filter: blur(0.4px);
   opacity: 0.9;
-  animation: lds-night-twinkle 100s ease-in-out infinite;
+  animation: lds-night-twinkle var(--lds-duration-100) ease-in-out infinite;
 }
 .living-day-sphere[data-mode="night"] .lds-mode-fx::before,
 .living-day-sphere[data-mode="night"] .lds-mode-fx::after {
@@ -425,7 +457,7 @@ const LDS_STYLES = `
     radial-gradient(ellipse 18% 80% at 32% 55%, rgba(var(--lds-accent), 0.36) 0%, transparent 80%),
     radial-gradient(ellipse 12% 60% at 56% 50%, rgba(var(--lds-accent), 0.30) 0%, transparent 75%);
   background-size: 50% 100%;
-  animation: lds-drift-x 260s linear infinite;
+  animation: lds-drift-x var(--lds-duration-260) linear infinite;
 }
 .living-day-sphere[data-mode="night"] .lds-mode-fx::after {
   top: 30%;
@@ -436,7 +468,7 @@ const LDS_STYLES = `
     radial-gradient(ellipse 16% 70% at 70% 55%, rgba(var(--lds-accent), 0.30) 0%, transparent 78%);
   background-size: 40% 100%;
   filter: blur(3.6px);
-  animation: lds-drift-x 340s linear infinite;
+  animation: lds-drift-x var(--lds-duration-340) linear infinite;
   animation-delay: -22s;
 }
 .living-day-sphere[data-mode="focus"] {
@@ -445,7 +477,7 @@ const LDS_STYLES = `
   --lds-base-contrast: 1.10;
 }
 .living-day-sphere[data-mode="focus"] .lds-angel-img {
-  animation: lds-focus-pulse 120s ease-in-out infinite;
+  animation: lds-focus-pulse var(--lds-duration-120) ease-in-out infinite;
 }
 .living-day-sphere[data-mode="focus"] .lds-angel-depth {
   opacity: 0.8;
@@ -456,7 +488,7 @@ const LDS_STYLES = `
     radial-gradient(circle, transparent 47%, rgba(var(--lds-accent), 0.24) 48%, transparent 50%),
     radial-gradient(circle, transparent 62%, rgba(var(--lds-accent), 0.16) 63%, transparent 65%),
     radial-gradient(circle, transparent 75%, rgba(var(--lds-accent), 0.08) 76%, transparent 78%);
-  animation: lds-focus-spin 420s linear infinite;
+  animation: lds-focus-spin var(--lds-duration-420) linear infinite;
 }
 .living-day-sphere[data-mode="focus"] .lds-mode-fx {
   inset: 22% 26%;
@@ -466,7 +498,7 @@ const LDS_STYLES = `
   filter: blur(9px);
   opacity: 0.55;
   mix-blend-mode: screen;
-  animation: lds-focus-beam 360s linear infinite;
+  animation: lds-focus-beam var(--lds-duration-360) linear infinite;
 }
 .living-day-sphere[data-mode="motion"] {
   --lds-base-bright: 1.05;
@@ -474,55 +506,17 @@ const LDS_STYLES = `
   --lds-base-contrast: 1.10;
 }
 .living-day-sphere[data-mode="motion"] .lds-angel-img {
-  animation: lds-motion-fly 120s ease-in-out infinite;
+  animation: lds-motion-fly var(--lds-duration-120) ease-in-out infinite;
 }
 .living-day-sphere[data-mode="motion"] .lds-angel-depth {
-  animation: lds-motion-fly-depth 120s ease-in-out infinite;
+  animation: lds-motion-fly-depth var(--lds-duration-120) ease-in-out infinite;
 }
 .living-day-sphere[data-mode="motion"] .lds-mode-fx {
   inset: 0;
   overflow: hidden;
   background: none;
-  opacity: 1;
+  opacity: 0;
   animation: none;
-}
-.living-day-sphere[data-mode="motion"] .lds-mode-fx::before,
-.living-day-sphere[data-mode="motion"] .lds-mode-fx::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -100%;
-  bottom: 0;
-  pointer-events: none;
-  background-repeat: repeat-y;
-}
-.living-day-sphere[data-mode="motion"] .lds-mode-fx::before {
-  background-image:
-    radial-gradient(circle at 14% 8%,  rgba(var(--lds-accent), 1)    0 2.6px, transparent 3.6px),
-    radial-gradient(circle at 38% 22%, rgba(var(--lds-accent), 0.92) 0 2.2px, transparent 3.2px),
-    radial-gradient(circle at 70% 14%, rgba(var(--lds-accent), 0.96) 0 2.4px, transparent 3.4px),
-    radial-gradient(circle at 22% 44%, rgba(var(--lds-accent), 0.88) 0 2px,   transparent 3px),
-    radial-gradient(circle at 56% 38%, rgba(var(--lds-accent), 0.94) 0 2.5px, transparent 3.5px),
-    radial-gradient(circle at 86% 32%, rgba(var(--lds-accent), 0.85) 0 1.8px, transparent 2.8px),
-    radial-gradient(circle at 32% 68%, rgba(var(--lds-accent), 0.92) 0 2.3px, transparent 3.3px),
-    radial-gradient(circle at 64% 78%, rgba(var(--lds-accent), 0.96) 0 2.4px, transparent 3.4px),
-    radial-gradient(circle at 90% 88%, rgba(var(--lds-accent), 0.82) 0 2px,   transparent 3px);
-  background-size: 100% 50%;
-  animation: lds-motion-rise 240s linear infinite;
-}
-.living-day-sphere[data-mode="motion"] .lds-mode-fx::after {
-  background-image:
-    radial-gradient(circle at 26% 12%, rgba(var(--lds-accent), 0.78) 0 1.3px, transparent 2px),
-    radial-gradient(circle at 52% 28%, rgba(var(--lds-accent), 0.72) 0 1.1px, transparent 1.8px),
-    radial-gradient(circle at 78% 18%, rgba(var(--lds-accent), 0.80) 0 1.4px, transparent 2.1px),
-    radial-gradient(circle at 16% 50%, rgba(var(--lds-accent), 0.74) 0 1.2px, transparent 1.9px),
-    radial-gradient(circle at 46% 62%, rgba(var(--lds-accent), 0.78) 0 1.3px, transparent 2px),
-    radial-gradient(circle at 84% 56%, rgba(var(--lds-accent), 0.72) 0 1.1px, transparent 1.8px),
-    radial-gradient(circle at 28% 84%, rgba(var(--lds-accent), 0.80) 0 1.4px, transparent 2.1px),
-    radial-gradient(circle at 68% 92%, rgba(var(--lds-accent), 0.76) 0 1.2px, transparent 1.9px);
-  background-size: 100% 40%;
-  animation: lds-motion-rise 320s linear infinite;
 }
 .living-day-sphere[data-mode="silence"] {
   --lds-base-bright: 0.78;
@@ -530,7 +524,7 @@ const LDS_STYLES = `
   --lds-base-contrast: 1.06;
 }
 .living-day-sphere[data-mode="silence"] .lds-angel-img {
-  animation: lds-silence-fade 140s ease-in-out infinite;
+  animation: lds-silence-fade var(--lds-duration-140) ease-in-out infinite;
 }
 .living-day-sphere[data-mode="silence"] .lds-angel-depth {
   opacity: 0.5;
@@ -569,7 +563,7 @@ const LDS_STYLES = `
     radial-gradient(circle at 88% 28%, rgba(var(--lds-accent), 0.58) 0 1.2px, transparent 1.9px),
     radial-gradient(circle at 96% 70%, rgba(var(--lds-accent), 0.54) 0 1.1px, transparent 1.8px);
   background-size: 50% 100%;
-  animation: lds-drift-x 280s linear infinite;
+  animation: lds-drift-x var(--lds-duration-280) linear infinite;
 }
 .living-day-sphere[data-mode="silence"] .lds-mode-fx::after {
   background-image:
@@ -580,7 +574,7 @@ const LDS_STYLES = `
     radial-gradient(circle at 74% 82%, rgba(var(--lds-accent), 0.40) 0 0.9px, transparent 1.4px),
     radial-gradient(circle at 90% 24%, rgba(var(--lds-accent), 0.42) 0 0.8px, transparent 1.3px);
   background-size: 40% 100%;
-  animation: lds-drift-x 360s linear infinite;
+  animation: lds-drift-x var(--lds-duration-360) linear infinite;
 }
 .living-day-sphere[data-mode="recovery"] {
   --lds-base-bright: 0.95;
@@ -588,10 +582,10 @@ const LDS_STYLES = `
   --lds-base-contrast: 1.04;
 }
 .living-day-sphere[data-mode="recovery"] .lds-angel-img {
-  animation: lds-recovery-breathe 140s ease-in-out infinite;
+  animation: lds-recovery-breathe var(--lds-duration-140) ease-in-out infinite;
 }
 .living-day-sphere[data-mode="recovery"] .lds-angel-depth {
-  animation: lds-recovery-breathe 140s ease-in-out infinite;
+  animation: lds-recovery-breathe var(--lds-duration-140) ease-in-out infinite;
 }
 .living-day-sphere[data-mode="recovery"] .lds-mode-fx {
   inset: 12% 20%;
@@ -600,10 +594,10 @@ const LDS_STYLES = `
     radial-gradient(circle, rgba(var(--lds-accent), 0.36) 0%, rgba(var(--lds-accent), 0.18) 22%, transparent 50%),
     radial-gradient(circle, transparent 56%, rgba(var(--lds-accent), 0.22) 58%, transparent 62%);
   filter: blur(2px);
-  animation: lds-recovery-heartbeat 140s ease-in-out infinite;
+  animation: lds-recovery-heartbeat var(--lds-duration-140) ease-in-out infinite;
 }
 .living-day-sphere[data-mode="recovery"] .lds-angel-stage::before {
-  animation: lds-recovery-heartbeat 140s ease-in-out infinite;
+  animation: lds-recovery-heartbeat var(--lds-duration-140) ease-in-out infinite;
 }
 
 @keyframes lds-focus-pulse {
@@ -623,10 +617,6 @@ const LDS_STYLES = `
 @keyframes lds-motion-fly-depth {
   0%, 100% { --lds-anim-y: 0px;  --lds-anim-rot: -0.2deg; }
   50%      { --lds-anim-y: -0.5px; --lds-anim-rot: 0.2deg; }
-}
-@keyframes lds-motion-rise {
-  from { transform: translateY(0); }
-  to   { transform: translateY(-50%); }
 }
 @keyframes lds-silence-fade {
   0%, 100% { --lds-anim-bright: 0.98; }
@@ -676,6 +666,18 @@ const LDS_STYLES = `
   }
   .lds-text {
     flex: 1 1 0;
+    gap: 14px;
+    min-height: clamp(88px, 28vw, 112px);
+  }
+  .lds-greeting-main {
+    font-size: 17px;
+  }
+  .lds-greeting-name {
+    font-size: clamp(25px, 7.4vw, 30px);
+    letter-spacing: 1px;
+  }
+  .lds-actions {
+    gap: 7px;
   }
   .lds-angel-stage {
     align-self: center;

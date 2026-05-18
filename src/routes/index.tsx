@@ -463,54 +463,25 @@ export function Home() {
         }}
       >
         {/* Hero */}
-        <div style={{ padding: '24px 18px 10px' }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              gap: 10,
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
-
-              <div
-                className="gold-text"
-                style={{
-                  marginTop: 4,
-                  lineHeight: 1.1,
-                  fontWeight: 500,
-                  fontSize: 18,
-                  
-                }}
-              >
-                {greetingByHour(today)},<br />
-              </div>
-              <div className="gold-text"
-              style={{
-                fontWeight: 600,
-                fontSize: 28,
-                letterSpacing: 1.9,
-                lineHeight: 1.9,
-              }}
-              >Анастасіє
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-              <IconChip ariaLabel="Пошук" onClick={() => navigate({ to: '/search' })}>
-                <Search size={17} color="var(--gold-text-strong)" />
-              </IconChip>
-              <IconChip
-                ariaLabel="Сповіщення"
-                badge={notifications.length ? String(notifications.length) : undefined}
-                onClick={() => setShowNotifications((open) => !open)}
-              >
-                <Bell size={17} color="var(--gold-text-strong)" />
-              </IconChip>
-            </div>
-          </div>
-
-          <LivingDaySphere />
+        <div style={{ padding: '10px 18px 10px' }}>
+          <LivingDaySphere
+            greeting={greetingByHour(today)}
+            name="Анастасіє"
+            actions={
+              <>
+                <IconChip ariaLabel="Пошук" onClick={() => navigate({ to: '/search' })}>
+                  <Search size={17} color="var(--gold-text-strong)" />
+                </IconChip>
+                <IconChip
+                  ariaLabel="Сповіщення"
+                  badge={notifications.length ? String(notifications.length) : undefined}
+                  onClick={() => setShowNotifications((open) => !open)}
+                >
+                  <Bell size={17} color="var(--gold-text-strong)" />
+                </IconChip>
+              </>
+            }
+          />
         </div>
 
         {/* Desktop arrow controls */}
@@ -576,7 +547,7 @@ export function Home() {
             padding: '4px 12px 12px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 3,
+            gap: 1,
             touchAction: 'pan-y',
             overscrollBehavior: 'contain',
           }}

@@ -31,13 +31,14 @@ export function useTasks() {
     queryKey,
     enabled: Boolean(user?.id),
     staleTime: STALE_TIME_MS,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const loaded = await getTasks();
       const moved = applyAutoMove(loaded);
       moved
         .filter((task) => loaded.find((item) => item.id === task.id)?.date !== task.date)
         .forEach((task) => {
-          void updateTask(task);
+          void updateTask(task, { syncSubtasks: false });
         });
       return moved;
     },
@@ -70,7 +71,9 @@ export function useTasks() {
         return;
       }
       if (JSON.stringify(previous) !== JSON.stringify(task)) {
-        void updateTask(task);
+        void updateTask(task, {
+          syncSubtasks: JSON.stringify(previous.subtasks) !== JSON.stringify(task.subtasks),
+        });
       }
     });
   }, [queryClient, queryKey]);
