@@ -1,12 +1,14 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useMemo, useRef, useState, type TouchEvent } from 'react';
 import { toast } from 'sonner';
+import { uk } from 'date-fns/locale';
 import { AppShell } from '../components/AppShell';
 import { DayCard } from '../components/DayCard';
 import { LivingDaySphere } from '../components/LivingDaySphere';
 import { ContextActionSheet } from '../components/ContextActionSheet';
+import { Calendar } from '../components/ui/calendar';
 import { useTasks, useUnreadNotifications } from '../components/Hooks';
-import { getWeekDates, toISO, UA_DAYS_FULL, UA_MONTHS } from '../lib/date';
+import { fromISO, getWeekDates, toISO, UA_DAYS_FULL, UA_MONTHS } from '../lib/date';
 import {
   newSubtask,
   reorderTasksForDate,
@@ -216,6 +218,11 @@ export function Home() {
     subtaskId?: string;
     initialValue?: string;
   } | null>(null);
+  const [transferDraft, setTransferDraft] = useState<{
+    taskIds: string[];
+    date: Date;
+    time: string;
+  } | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const weekTouchStart = useRef<{ x: number; y: number } | null>(null);
   const isHorizontalWeekSwipe = useRef(false);
@@ -324,10 +331,14 @@ export function Home() {
         search: { id: ids[0] },
       });
     } else if (k === 'transfer') {
-      const date = window.prompt('Дата у форматі YYYY-MM-DD', selectedDate);
-      if (date) save(tasks.map((t) => (ids.includes(t.id) ? { ...t, date } : t)));
-      setSelection([]);
-      if (date) setSelectedDate(date);
+      if (!ids.length) return;
+      const task = tasks.find((t) => t.id === ids[0]);
+      setTransferDraft({
+        taskIds: ids,
+        date: task?.date ? fromISO(task.date) : fromISO(selectedDate),
+        time: task?.time ?? '',
+      });
+      setMenuFor(null);
     } else if (k === 'subtask' && ids.length === 1) {
       setSubtaskDraft({ taskId: ids[0] });
     } else if (k === 'send') {
@@ -341,6 +352,20 @@ export function Home() {
     } else {
       setSelection([]);
     }
+  };
+
+  const saveTransfer = () => {
+    if (!transferDraft) return;
+    const date = toISO(transferDraft.date);
+    const time = transferDraft.time || undefined;
+    save(
+      tasks.map((task) =>
+        transferDraft.taskIds.includes(task.id) ? { ...task, date, time } : task,
+      ),
+    );
+    setSelection([]);
+    setTransferDraft(null);
+    setSelectedDate(date);
   };
 
   const saveSubtaskDraft = (value: string) => {
@@ -663,6 +688,149 @@ export function Home() {
           onClose={() => setSubtaskDraft(null)}
           onSave={saveSubtaskDraft}
         />
+      )}
+
+      {transferDraft && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            background: 'rgba(0,0,0,0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 18,
+          }}
+        >
+          <div
+            className="glass"
+            style={{
+              width: 'min(420px, 100%)',
+              borderRadius: 24,
+              padding: '0 0 18px',
+              background: 'rgba(0,0,0,0.98)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              overflow: 'hidden',
+            }}
+          >
+            <Calendar
+              mode="single"
+              selected={transferDraft.date}
+              onSelect={(date) => {
+                if (!date) return;
+                setTransferDraft((current) => (current ? { ...current, date } : current));
+              }}
+              locale={uk}
+              formatters={{
+                formatCaption: (date) =>
+                  date.toLocaleDateString('uk-UA', { month: 'long', year: 'numeric' }),
+                formatWeekdayName: (date) =>
+                  date.toLocaleDateString('uk-UA', { weekday: 'short' }),
+              }}
+              className="w-full"
+            />
+            <div style={{ padding: '0 18px' }}>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  height: 48,
+                  marginTop: 12,
+                  borderRadius: 16,
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(0,0,0,0.06)',
+                  color: 'var(--txt)',
+                  padding: '0 14px',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                <span style={{ color: 'var(--txt-muted)' }}>Час</span>
+                <input
+                  type="time"
+                  value={transferDraft.time}
+                  onClick={(event) => event.currentTarget.showPicker?.()}
+                  onFocus={(event) => event.currentTarget.showPicker?.()}
+                  onChange={(event) =>
+                    setTransferDraft((current) =>
+                      current ? { ...current, time: event.target.value } : current,
+                    )
+                  }
+                  style={{
+                    flex: 1,
+                    height: '100%',
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--txt)',
+                    fontSize: 16,
+                    fontWeight: 700,
+                    textAlign: 'right',
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                />
+              </label>
+              <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                <button
+                  onClick={() => setTransferDraft(null)}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    borderRadius: 999,
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    background: 'rgba(255,255,255,0.06)',
+                    color: 'var(--txt-dim)',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Скасувати
+                </button>
+                <button
+                  onClick={() => {
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    setTransferDraft((current) =>
+                      current ? { ...current, date: tomorrow } : current,
+                    );
+                  }}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    borderRadius: 999,
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    background: 'rgba(255,255,255,0.06)',
+                    color: 'var(--txt)',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  На завтра
+                </button>
+                <button
+                  onClick={saveTransfer}
+                  style={{
+                    flex: 1,
+                    height: 44,
+                    borderRadius: 999,
+                    border: 'var(--accent-45) 1px solid',
+                    background: 'linear-gradient(135deg, var(--accent-18) 10%, var(--accent-06) 100%)',
+                    color: 'var(--gold-text-strong)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Зберегти
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {menuFor && (
