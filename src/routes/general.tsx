@@ -95,7 +95,8 @@ function RecurrenceDeleteSheet({
         alignItems: 'flex-end',
         justifyContent: 'center',
         background: 'rgba(0,0,0,0.68)',
-        padding: '0 16px 24px',
+        padding:
+          '0 16px max(24px, env(safe-area-inset-bottom), calc(var(--app-shell-main-bottom, 96px) - var(--kb-offset, 0px)))',
       }}
       onClick={onCancel}
     >
