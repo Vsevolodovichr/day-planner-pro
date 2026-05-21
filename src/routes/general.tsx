@@ -64,6 +64,119 @@ function parseFolderIdList(raw: string | null): string[] {
   }
 }
 
+type RecurrenceScope = 'occurrence' | 'series';
+
+function isRepeatingTask(task?: Task) {
+  return Boolean(task?.repeat && task.repeat !== 'none');
+}
+
+function withRepeatException(task: Task, date: string) {
+  const repeatExceptions = task.repeatExceptions ?? [];
+  if (repeatExceptions.includes(date)) return task;
+  return { ...task, repeatExceptions: [...repeatExceptions, date] };
+}
+
+function RecurrenceDeleteSheet({
+  onOccurrence,
+  onSeries,
+  onCancel,
+}: {
+  onOccurrence: () => void;
+  onSeries: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 60,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        background: 'rgba(0,0,0,0.68)',
+        padding: '0 16px 24px',
+      }}
+      onClick={onCancel}
+    >
+      <div
+        className="glass"
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: 400,
+          borderRadius: 24,
+          padding: 14,
+          background: 'rgba(18,18,20,0.96)',
+        }}
+      >
+        <div
+          style={{
+            padding: '6px 4px 12px',
+            textAlign: 'center',
+            fontSize: 16,
+            color: 'var(--txt-main)',
+            fontWeight: 500,
+          }}
+        >
+          Видалити повтор?
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <button
+            type="button"
+            onClick={onOccurrence}
+            style={{
+              height: 46,
+              width: '100%',
+              borderRadius: 14,
+              border: '1px solid var(--accent-45)',
+              background: 'linear-gradient(180deg, var(--accent-18) 0%, var(--accent-04) 100%)',
+              color: 'var(--gold-text-strong)',
+              fontSize: 15,
+              cursor: 'pointer',
+            }}
+          >
+            Цей повтор
+          </button>
+          <button
+            type="button"
+            onClick={onSeries}
+            style={{
+              height: 46,
+              width: '100%',
+              borderRadius: 14,
+              border: '1px solid var(--glass-stroke)',
+              background: 'rgba(255,255,255,0.05)',
+              color: 'var(--txt-main)',
+              fontSize: 15,
+              cursor: 'pointer',
+            }}
+          >
+            Усі повтори
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            marginTop: 12,
+            height: 44,
+            width: '100%',
+            borderRadius: 14,
+            border: 'none',
+            background: 'rgba(255,255,255,0.08)',
+            color: 'var(--txt-muted)',
+            fontSize: 15,
+            cursor: 'pointer',
+          }}
+        >
+          Скасувати
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SortableFolderCard({ folder, children }: { folder: Folder; children: ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: folder.id,
@@ -398,6 +511,7 @@ function General() {
     time: string;
   } | null>(null);
   const [folderModal, setFolderModal] = useState<{ id?: string; initialValue?: string } | null>(null);
+  const [recurrenceDelete, setRecurrenceDelete] = useState<{ taskId: string; date: string } | null>(null);
   const [expandedFolderIds, setExpandedFolderIds] = useState<string[]>(() => {
     if (typeof window === 'undefined') return [];
     return parseFolderIdList(window.localStorage.getItem(EXPANDED_FOLDERS_STORAGE_KEY));
@@ -522,7 +636,39 @@ function General() {
       ),
     );
 
+  const recurrenceTarget = (taskId: string, source = tasks) => {
+    const target = source.find((task) => task.id === taskId);
+    const parent = target?.recurrenceParentId
+      ? source.find((task) => task.id === target.recurrenceParentId)
+      : undefined;
+    const base = isRepeatingTask(target) ? target : isRepeatingTask(parent) ? parent : undefined;
+    return target && base ? { target, base } : undefined;
+  };
+
+  const deleteRecurringTask = (taskId: string, scope: RecurrenceScope, occurrenceDate: string) => {
+    const recurrence = recurrenceTarget(taskId);
+    if (!recurrence) return;
+    const { target, base } = recurrence;
+    const nextTasks = scope === 'series'
+      ? tasks.filter((task) => task.id !== base.id && task.recurrenceParentId !== base.id)
+      : target.recurrenceParentId
+        ? tasks.filter((task) => task.id !== target.id)
+        : tasks.map((task) =>
+            task.id === base.id ? withRepeatException(task, occurrenceDate) : task,
+          );
+    saveTasks(nextTasks);
+  };
+
   const remove = (id: string) => {
+    const recurrence = recurrenceTarget(id);
+    if (recurrence) {
+      setRecurrenceDelete({
+        taskId: id,
+        date: recurrence.target.recurrenceDate ?? recurrence.target.date ?? recurrence.base.date ?? toISO(new Date()),
+      });
+      setMenuFor(null);
+      return;
+    }
     if (window.confirm('Видалити завдання?')) {
       saveTasks(tasks.filter((t) => t.id !== id));
     }
@@ -1163,6 +1309,21 @@ function General() {
           onAction={(key) => {
             menuAction(key);
           }}
+        />
+      )}
+      {recurrenceDelete && (
+        <RecurrenceDeleteSheet
+          onOccurrence={() => {
+            const draft = recurrenceDelete;
+            setRecurrenceDelete(null);
+            deleteRecurringTask(draft.taskId, 'occurrence', draft.date);
+          }}
+          onSeries={() => {
+            const draft = recurrenceDelete;
+            setRecurrenceDelete(null);
+            deleteRecurringTask(draft.taskId, 'series', draft.date);
+          }}
+          onCancel={() => setRecurrenceDelete(null)}
         />
       )}
     </AppShell>

@@ -18,6 +18,7 @@ import {
 } from '../lib/task-utils';
 import { greetingByHour } from '../lib/theme';
 import { ChevronLeft, ChevronRight, Search, Bell } from 'lucide-react';
+import type { Task } from '../types';
 
 export const Route = createFileRoute('/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -202,6 +203,120 @@ function SubtaskModal({
   );
 }
 
+type RecurrenceScope = 'occurrence' | 'series';
+type RecurrenceDeleteDraft = { taskIds: string[]; date: string };
+
+function isRepeatingTask(task?: Task) {
+  return Boolean(task?.repeat && task.repeat !== 'none');
+}
+
+function withRepeatException(task: Task, date: string) {
+  const repeatExceptions = task.repeatExceptions ?? [];
+  if (repeatExceptions.includes(date)) return task;
+  return { ...task, repeatExceptions: [...repeatExceptions, date] };
+}
+
+function RecurrenceDeleteSheet({
+  onOccurrence,
+  onSeries,
+  onCancel,
+}: {
+  onOccurrence: () => void;
+  onSeries: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 60,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        background: 'rgba(0,0,0,0.68)',
+        padding: '0 16px 24px',
+      }}
+      onClick={onCancel}
+    >
+      <div
+        className="glass"
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: 400,
+          borderRadius: 24,
+          padding: 14,
+          background: 'rgba(18,18,20,0.96)',
+        }}
+      >
+        <div
+          style={{
+            padding: '6px 4px 12px',
+            textAlign: 'center',
+            fontSize: 16,
+            color: 'var(--txt-main)',
+            fontWeight: 500,
+          }}
+        >
+          Видалити повтор?
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <button
+            type="button"
+            onClick={onOccurrence}
+            style={{
+              height: 46,
+              width: '100%',
+              borderRadius: 14,
+              border: '1px solid var(--accent-45)',
+              background: 'linear-gradient(180deg, var(--accent-18) 0%, var(--accent-04) 100%)',
+              color: 'var(--gold-text-strong)',
+              fontSize: 15,
+              cursor: 'pointer',
+            }}
+          >
+            Цей повтор
+          </button>
+          <button
+            type="button"
+            onClick={onSeries}
+            style={{
+              height: 46,
+              width: '100%',
+              borderRadius: 14,
+              border: '1px solid var(--glass-stroke)',
+              background: 'rgba(255,255,255,0.05)',
+              color: 'var(--txt-main)',
+              fontSize: 15,
+              cursor: 'pointer',
+            }}
+          >
+            Усі повтори
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            marginTop: 12,
+            height: 44,
+            width: '100%',
+            borderRadius: 14,
+            border: 'none',
+            background: 'rgba(255,255,255,0.08)',
+            color: 'var(--txt-muted)',
+            fontSize: 15,
+            cursor: 'pointer',
+          }}
+        >
+          Скасувати
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function Home() {
   const { tasks, save } = useTasks();
   const { notifications, markRead } = useUnreadNotifications();
@@ -212,7 +327,7 @@ export function Home() {
   const [selectedDate, setSelectedDate] = useState(homeDate);
   const week = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
   const [selection, setSelection] = useState<string[]>([]);
-  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [menuFor, setMenuFor] = useState<{ taskId: string; date: string } | null>(null);
   const [subtaskDraft, setSubtaskDraft] = useState<{
     taskId: string;
     subtaskId?: string;
@@ -224,6 +339,7 @@ export function Home() {
     time: string;
   } | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [recurrenceDelete, setRecurrenceDelete] = useState<RecurrenceDeleteDraft | null>(null);
   const weekTouchStart = useRef<{ x: number; y: number } | null>(null);
   const isHorizontalWeekSwipe = useRef(false);
 
@@ -302,11 +418,53 @@ export function Home() {
     save(reorderTasksForDate(tasks, iso, orderedIds));
   };
 
-  const action = (k: string, ids = selection) => {
-    if (k === 'delete') {
+  const recurrenceTarget = (taskId: string, source = tasks) => {
+    const target = source.find((task) => task.id === taskId);
+    const parent = target?.recurrenceParentId
+      ? source.find((task) => task.id === target.recurrenceParentId)
+      : undefined;
+    const base = isRepeatingTask(target) ? target : isRepeatingTask(parent) ? parent : undefined;
+    return target && base ? { target, base } : undefined;
+  };
+
+  const deleteTasks = (ids: string[], scope?: RecurrenceScope, occurrenceDate = selectedDate) => {
+    if (!scope) {
       if (!window.confirm('Видалити завдання?')) return;
-      save(tasks.filter((t) => !ids.includes(t.id)));
+      save(tasks.filter((task) => !ids.includes(task.id)));
       setSelection([]);
+      return;
+    }
+
+    let nextTasks = tasks;
+    ids.forEach((taskId) => {
+      const recurrence = recurrenceTarget(taskId, nextTasks);
+      if (!recurrence) {
+        nextTasks = nextTasks.filter((task) => task.id !== taskId);
+        return;
+      }
+
+      const { target, base } = recurrence;
+      nextTasks = scope === 'series'
+        ? nextTasks.filter((task) => task.id !== base.id && task.recurrenceParentId !== base.id)
+        : target.recurrenceParentId
+          ? nextTasks.filter((task) => task.id !== target.id)
+          : nextTasks.map((task) =>
+              task.id === base.id ? withRepeatException(task, occurrenceDate) : task,
+            );
+    });
+
+    save(nextTasks);
+    setSelection([]);
+  };
+
+  const action = (k: string, ids = selection, occurrenceDate = selectedDate) => {
+    if (k === 'delete') {
+      if (ids.some((taskId) => recurrenceTarget(taskId))) {
+        setRecurrenceDelete({ taskIds: ids, date: occurrenceDate });
+        setMenuFor(null);
+        return;
+      }
+      deleteTasks(ids);
     } else if (k === 'copy') {
       const text = tasks
         .filter((t) => ids.includes(t.id))
@@ -563,15 +721,15 @@ export function Home() {
               onToggleSubtask={toggleSubtask}
               onEditSubtask={editSubtask}
               onDeleteSubtask={deleteSubtask}
-              onAddSubtask={(taskId) => action('subtask', [taskId])}
-              onEdit={(taskId) => action('edit', [taskId])}
-              onTransfer={(taskId) => action('transfer', [taskId])}
-              onSend={(taskId) => action('send', [taskId])}
-              onDelete={(taskId) => action('delete', [taskId])}
-              onCopy={(taskId) => action('copy', [taskId])}
+              onAddSubtask={(taskId) => action('subtask', [taskId], iso)}
+              onEdit={(taskId) => action('edit', [taskId], iso)}
+              onTransfer={(taskId) => action('transfer', [taskId], iso)}
+              onSend={(taskId) => action('send', [taskId], iso)}
+              onDelete={(taskId) => action('delete', [taskId], iso)}
+              onCopy={(taskId) => action('copy', [taskId], iso)}
               onReorder={(orderedIds) => reorderDayTasks(iso, orderedIds)}
               onSelect={select}
-              onMenu={(id) => setMenuFor(id)}
+              onMenu={(id) => setMenuFor({ taskId: id, date: iso })}
               selectedIds={selection}
             />
           ))}
@@ -658,6 +816,22 @@ export function Home() {
           initialValue={subtaskDraft.initialValue}
           onClose={() => setSubtaskDraft(null)}
           onSave={saveSubtaskDraft}
+        />
+      )}
+
+      {recurrenceDelete && (
+        <RecurrenceDeleteSheet
+          onOccurrence={() => {
+            const draft = recurrenceDelete;
+            setRecurrenceDelete(null);
+            deleteTasks(draft.taskIds, 'occurrence', draft.date);
+          }}
+          onSeries={() => {
+            const draft = recurrenceDelete;
+            setRecurrenceDelete(null);
+            deleteTasks(draft.taskIds, 'series', draft.date);
+          }}
+          onCancel={() => setRecurrenceDelete(null)}
         />
       )}
 
@@ -808,7 +982,7 @@ export function Home() {
         <ContextActionSheet
           onClose={() => setMenuFor(null)}
           onAction={(k) => {
-            action(k, [menuFor]);
+            action(k, [menuFor.taskId], menuFor.date);
           }}
         />
       )}

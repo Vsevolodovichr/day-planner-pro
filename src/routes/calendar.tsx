@@ -19,6 +19,7 @@ import {
   taskText,
   toggleTaskCompletion,
 } from '../lib/task-utils';
+import type { Task } from '../types';
 
 export const Route = createFileRoute('/calendar')({ component: CalendarScreen });
 
@@ -36,11 +37,125 @@ const navBtn: React.CSSProperties = {
   padding: 0,
 };
 
+type RecurrenceScope = 'occurrence' | 'series';
+
+function isRepeatingTask(task?: Task) {
+  return Boolean(task?.repeat && task.repeat !== 'none');
+}
+
+function withRepeatException(task: Task, date: string) {
+  const repeatExceptions = task.repeatExceptions ?? [];
+  if (repeatExceptions.includes(date)) return task;
+  return { ...task, repeatExceptions: [...repeatExceptions, date] };
+}
+
+function RecurrenceDeleteSheet({
+  onOccurrence,
+  onSeries,
+  onCancel,
+}: {
+  onOccurrence: () => void;
+  onSeries: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 60,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        background: 'rgba(0,0,0,0.68)',
+        padding: '0 16px 24px',
+      }}
+      onClick={onCancel}
+    >
+      <div
+        className="glass"
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: 400,
+          borderRadius: 24,
+          padding: 14,
+          background: 'rgba(18,18,20,0.96)',
+        }}
+      >
+        <div
+          style={{
+            padding: '6px 4px 12px',
+            textAlign: 'center',
+            fontSize: 16,
+            color: 'var(--txt-main)',
+            fontWeight: 500,
+          }}
+        >
+          Видалити повтор?
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <button
+            type="button"
+            onClick={onOccurrence}
+            style={{
+              height: 46,
+              width: '100%',
+              borderRadius: 14,
+              border: '1px solid var(--accent-45)',
+              background: 'linear-gradient(180deg, var(--accent-18) 0%, var(--accent-04) 100%)',
+              color: 'var(--gold-text-strong)',
+              fontSize: 15,
+              cursor: 'pointer',
+            }}
+          >
+            Цей повтор
+          </button>
+          <button
+            type="button"
+            onClick={onSeries}
+            style={{
+              height: 46,
+              width: '100%',
+              borderRadius: 14,
+              border: '1px solid var(--glass-stroke)',
+              background: 'rgba(255,255,255,0.05)',
+              color: 'var(--txt-main)',
+              fontSize: 15,
+              cursor: 'pointer',
+            }}
+          >
+            Усі повтори
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            marginTop: 12,
+            height: 44,
+            width: '100%',
+            borderRadius: 14,
+            border: 'none',
+            background: 'rgba(255,255,255,0.08)',
+            color: 'var(--txt-muted)',
+            fontSize: 15,
+            cursor: 'pointer',
+          }}
+        >
+          Скасувати
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function CalendarScreen() {
   const navigate = useNavigate();
   const { tasks, save } = useTasks();
   const [view, setView] = useState(new Date());
   const [selected, setSelected] = useState(new Date());
+  const [recurrenceDelete, setRecurrenceDelete] = useState<{ taskId: string; date: string } | null>(null);
 
   const year = view.getFullYear();
   const month = view.getMonth();
@@ -164,7 +279,34 @@ function CalendarScreen() {
     save(tasks.map((task) => (task.id === id ? { ...task, date: nextDate } : task)));
   };
 
+  const recurrenceTarget = (taskId: string, source = tasks) => {
+    const target = source.find((task) => task.id === taskId);
+    const parent = target?.recurrenceParentId
+      ? source.find((task) => task.id === target.recurrenceParentId)
+      : undefined;
+    const base = isRepeatingTask(target) ? target : isRepeatingTask(parent) ? parent : undefined;
+    return target && base ? { target, base } : undefined;
+  };
+
+  const deleteRecurringTask = (taskId: string, scope: RecurrenceScope, occurrenceDate: string) => {
+    const recurrence = recurrenceTarget(taskId);
+    if (!recurrence) return;
+    const { target, base } = recurrence;
+    const nextTasks = scope === 'series'
+      ? tasks.filter((task) => task.id !== base.id && task.recurrenceParentId !== base.id)
+      : target.recurrenceParentId
+        ? tasks.filter((task) => task.id !== target.id)
+        : tasks.map((task) =>
+            task.id === base.id ? withRepeatException(task, occurrenceDate) : task,
+          );
+    save(nextTasks);
+  };
+
   const deleteTask = (id: string) => {
+    if (recurrenceTarget(id)) {
+      setRecurrenceDelete({ taskId: id, date: selectedISO });
+      return;
+    }
     if (!window.confirm('Видалити завдання?')) return;
     save(tasks.filter((task) => task.id !== id));
   };
@@ -442,6 +584,21 @@ function CalendarScreen() {
           </div>
         )}
       </div>
+      {recurrenceDelete && (
+        <RecurrenceDeleteSheet
+          onOccurrence={() => {
+            const draft = recurrenceDelete;
+            setRecurrenceDelete(null);
+            deleteRecurringTask(draft.taskId, 'occurrence', draft.date);
+          }}
+          onSeries={() => {
+            const draft = recurrenceDelete;
+            setRecurrenceDelete(null);
+            deleteRecurringTask(draft.taskId, 'series', draft.date);
+          }}
+          onCancel={() => setRecurrenceDelete(null)}
+        />
+      )}
     </AppShell>
   );
 }
