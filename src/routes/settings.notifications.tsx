@@ -4,6 +4,7 @@ import { Bell, Palette, Clock, Music2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '../components/AppShell';
 import {
+  disableMotionPermission,
   getMotionPermissionState,
   loadAngelAnimationTempo,
   requestMotionPermission,
@@ -57,6 +58,15 @@ function NotifSettings() {
     if (next === 'unsupported') toast.error('На цьому пристрої рух недоступний');
   };
 
+  const toggleAngelMotion = async (enabled: boolean) => {
+    if (!enabled) {
+      setMotionPermission(disableMotionPermission());
+      toast.success('Рух вимкнено');
+      return;
+    }
+    await requestAngelMotion();
+  };
+
   const updateAnimationTempo = (value: number) => {
     setAnimationTempo(saveAngelAnimationTempo(value));
   };
@@ -68,7 +78,9 @@ function NotifSettings() {
         ? 'Дозвіл не надано'
         : motionPermission === 'unsupported'
           ? 'Недоступно на цьому пристрої'
-          : 'Дозвіл для нахилу ангела на iPhone';
+          : motionPermission === 'disabled'
+            ? 'Вимкнено'
+            : 'Дозвіл для нахилу ангела на iPhone';
 
   return (
     <AppShell>
@@ -191,8 +203,8 @@ function NotifSettings() {
             right={
               <Toggle
                 checked={motionPermission === 'granted'}
-                disabled={motionPermission === 'granted' || motionPermission === 'unsupported'}
-                onChange={requestAngelMotion}
+                disabled={motionPermission === 'unsupported'}
+                onChange={toggleAngelMotion}
                 ariaLabel="Рух Ангела"
               />
             }

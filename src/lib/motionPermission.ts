@@ -1,4 +1,4 @@
-export type MotionPermissionState = 'unsupported' | 'prompt' | 'granted' | 'denied';
+export type MotionPermissionState = 'unsupported' | 'prompt' | 'granted' | 'denied' | 'disabled';
 
 const MOTION_PERMISSION_STATE_KEY = 'angel.motionPermissionState';
 const MOTION_PERMISSION_GRANTED_AT_KEY = 'angel.motionPermissionGrantedAt';
@@ -36,7 +36,13 @@ function saveMotionPermissionState(state: MotionPermissionState) {
 function readStoredState(): MotionPermissionState | null {
   try {
     const state = window.localStorage.getItem(MOTION_PERMISSION_STATE_KEY);
-    if (state === 'unsupported' || state === 'prompt' || state === 'granted' || state === 'denied') {
+    if (
+      state === 'unsupported' ||
+      state === 'prompt' ||
+      state === 'granted' ||
+      state === 'denied' ||
+      state === 'disabled'
+    ) {
       return state;
     }
   } catch {
@@ -48,8 +54,15 @@ function readStoredState(): MotionPermissionState | null {
 export function getMotionPermissionState(): MotionPermissionState {
   const DOE = getDeviceOrientationEvent();
   if (!DOE) return 'unsupported';
+  const storedState = readStoredState();
+  if (storedState === 'disabled') return 'disabled';
   if (typeof DOE.requestPermission !== 'function') return 'granted';
-  return readStoredState() ?? 'prompt';
+  return storedState ?? 'prompt';
+}
+
+export function disableMotionPermission(): MotionPermissionState {
+  saveMotionPermissionState('disabled');
+  return 'disabled';
 }
 
 export function loadAngelAnimationTempo(): number {
