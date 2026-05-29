@@ -83,11 +83,23 @@ async function forcePwaRefresh(): Promise<void> {
 async function getCurrentPwaForceUpdateMarker(): Promise<PwaForceUpdateMarker | null> {
   const response = await authFetch(`${API_URL}/api/pwa-force-updates/current`, {
     cache: 'no-store',
-    headers: { 'Cache-Control': 'no-store' },
   });
 
   if (!response.ok) return null;
   return (await response.json().catch(() => null)) as PwaForceUpdateMarker | null;
+}
+
+async function getResponseError(response: Response): Promise<Error> {
+  const payload = await response
+    .clone()
+    .json()
+    .catch(() => null);
+  const message =
+    payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+      ? payload.error
+      : response.statusText;
+
+  return new Error(`HTTP ${response.status}: ${message}`);
 }
 
 async function checkPwaForceUpdateMarker(): Promise<void> {
@@ -142,10 +154,9 @@ export function startPwaForceUpdatePolling(): () => void {
 export async function getPwaForceUpdateAdmin(): Promise<PwaForceAdminResponse> {
   const response = await authFetch(`${API_URL}/api/pwa-force-updates/admin`, {
     cache: 'no-store',
-    headers: { 'Cache-Control': 'no-store' },
   });
 
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await getResponseError(response);
   return (await response.json()) as PwaForceAdminResponse;
 }
 
@@ -155,10 +166,9 @@ export async function createPwaForceUpdate(
   const response = await authFetch(`${API_URL}/api/pwa-force-updates`, {
     method: 'POST',
     cache: 'no-store',
-    headers: { 'Cache-Control': 'no-store' },
     body: JSON.stringify({ target_agency_id: targetAgencyId }),
   });
 
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await getResponseError(response);
   return (await response.json()) as PwaForceUpdateRow;
 }

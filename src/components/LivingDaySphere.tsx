@@ -205,8 +205,6 @@ const LDS_STYLES = `
   box-shadow:
     inset 0 1px 0 rgba(255, 232, 176, 0.10),
     inset 0 -28px 70px rgba(0, 0, 0, 0.58),
-    0 24px 70px rgba(0, 0, 0, 0.62),
-    0 1px 0 rgba(255, 231, 168, 0.04);
   overflow: hidden;
   isolation: isolate;
 }
@@ -230,7 +228,6 @@ const LDS_STYLES = `
   background:
     linear-gradient(115deg, rgba(255, 236, 185, 0.14) 0%, transparent 18%, transparent 70%, rgba(var(--lds-accent), 0.08) 100%),
     radial-gradient(65% 30% at 70% 100%, rgba(0, 0, 0, 0.62) 0%, transparent 72%);
-  box-shadow: inset 0 0 0 1px rgba(255, 229, 168, 0.03);
   pointer-events: none;
   z-index: 1;
 }
@@ -284,8 +281,8 @@ const LDS_STYLES = `
 
 .lds-angel-stage {
   position: relative;
-  width: clamp(160px, 27vw, 248px);
-  height: clamp(146px, 24vw, 226px);
+  width: clamp(80px, 14vw, 124px);
+  height: clamp(73px, 12vw, 113px);
   flex: 0 0 auto;
   display: grid;
   place-items: center;
@@ -340,8 +337,8 @@ const LDS_STYLES = `
 }
 .lds-angel-depth,
 .lds-angel-img {
-  width: 100%;
-  height: 100%;
+  width: 60%;
+  height: 60%;
   object-fit: contain;
   user-select: none;
 }

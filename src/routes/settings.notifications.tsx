@@ -105,8 +105,12 @@ function NotifSettings() {
         setPwaForceAgencies(data.agencies);
         setPwaForceRecent(data.recent);
       })
-      .catch(() => {
-        if (!cancelled) toast.error('Не вдалося завантажити PWA оновлення');
+      .catch((error) => {
+        if (!cancelled) {
+          toast.error(
+            `Не вдалося завантажити PWA оновлення: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
       })
       .finally(() => {
         if (!cancelled) setPwaForceLoading(false);
@@ -127,8 +131,10 @@ function NotifSettings() {
       );
       setPwaForceRecent((recent) => [row, ...recent].slice(0, 10));
       toast.success('Примусове оновлення PWA запущено');
-    } catch {
-      toast.error('Не вдалося запустити PWA оновлення');
+    } catch (error) {
+      toast.error(
+        `Не вдалося запустити PWA оновлення: ${error instanceof Error ? error.message : String(error)}`,
+      );
     } finally {
       setPwaForceSubmitting(false);
     }
