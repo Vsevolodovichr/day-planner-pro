@@ -194,17 +194,14 @@ const LDS_STYLES = `
   --lds-base-contrast: 1.06;
   --lds-base-saturate: 1.12;
   position: relative;
-  margin-top: 14px;
+  margin-top: 4px;
   border-radius: 26px;
-  padding: 18px;
+  padding: 8px;
   background:
     radial-gradient(90% 120% at 78% 34%, rgba(var(--lds-accent), 0.16) 0%, rgba(var(--lds-accent), 0.05) 28%, transparent 54%),
     radial-gradient(120% 100% at 0% 0%, rgba(255, 224, 156, 0.08) 0%, transparent 42%),
     linear-gradient(160deg, rgba(25, 22, 17, 0.96) 0%, rgba(9, 8, 7, 0.98) 47%, rgba(3, 3, 3, 0.99) 100%);
   border: 1px solid rgba(var(--lds-accent), 0.24);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 232, 176, 0.10),
-    inset 0 -28px 70px rgba(0, 0, 0, 0.58),
   overflow: hidden;
   isolation: isolate;
 }
@@ -236,7 +233,7 @@ const LDS_STYLES = `
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 6px;
   min-width: 0;
 }
 .lds-text {
@@ -644,11 +641,13 @@ const LDS_STYLES = `
   10%, 20%      { transform: scale(1.01); opacity: 0.5; }
 }
 @media (min-width: 640px) {
-  .living-day-sphere { padding: 22px; }
-  .lds-content { gap: 24px; }
+  .living-day-sphere { padding: 14px 18px; }
+  .lds-content { gap: 18px; }
+  .lds-text { gap: 12px; }
+  .lds-actions { min-height: 32px; }
   .lds-angel-stage {
-    width: clamp(210px, 25vw, 260px);
-    height: clamp(188px, 22vw, 232px);
+    width: clamp(170px, 20vw, 210px);
+    height: clamp(150px, 18vw, 186px);
   }
 }
 
@@ -663,15 +662,19 @@ const LDS_STYLES = `
   }
   .lds-text {
     flex: 1 1 0;
-    gap: 14px;
+    gap: 10px;
     min-height: clamp(88px, 28vw, 112px);
   }
   .lds-greeting-main {
-    font-size: 17px;
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.08;
   }
   .lds-greeting-name {
-    font-size: clamp(25px, 7.4vw, 30px);
-    letter-spacing: 1px;
+    font-size: clamp(21px, 6.2vw, 26px);
+    font-weight: 500;
+    letter-spacing: 0.6px;
+    line-height: 1.06;
   }
   .lds-actions {
     gap: 7px;
