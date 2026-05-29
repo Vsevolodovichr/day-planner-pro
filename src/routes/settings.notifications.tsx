@@ -1,8 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { Bell, Palette, Clock, Music2 } from 'lucide-react';
+import { Bell, Palette, Clock, Music2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '../components/AppShell';
+import { useAuth } from '../contexts/AuthContext';
 import {
   disableMotionPermission,
   getMotionPermissionState,
@@ -13,11 +14,25 @@ import {
 } from '../lib/motionPermission';
 import { storage } from '../lib/storage';
 import { applyAccent, getGoldPresets, loadAccent, saveAccent } from '../lib/theme';
+import {
+  createPwaForceUpdate,
+  getPwaForceUpdateAdmin,
+  type PwaForceAgency,
+  type PwaForceUpdateRow,
+} from '../lib/pwaForceUpdate';
 import type { NotificationSettings } from '../types';
 
 export const Route = createFileRoute('/settings/notifications')({ component: NotifSettings });
 
+const PWA_FORCE_ALL_AGENCIES = '__all__';
+
+function formatPwaForceDate(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('uk-UA');
+}
+
 function NotifSettings() {
+  const { user } = useAuth();
   const [accentColor, setAccentColor] = useState<string>(loadAccent());
   const [motionPermission, setMotionPermission] = useState<MotionPermissionState>('prompt');
   const [animationTempo, setAnimationTempo] = useState(() => loadAngelAnimationTempo());
@@ -27,6 +42,11 @@ function NotifSettings() {
     notifyBefore: '20 хвилин',
     melody: 'За замовчуванням',
   });
+  const [pwaForceAgencies, setPwaForceAgencies] = useState<PwaForceAgency[]>([]);
+  const [pwaForceRecent, setPwaForceRecent] = useState<PwaForceUpdateRow[]>([]);
+  const [pwaForceTarget, setPwaForceTarget] = useState(PWA_FORCE_ALL_AGENCIES);
+  const [pwaForceLoading, setPwaForceLoading] = useState(false);
+  const [pwaForceSubmitting, setPwaForceSubmitting] = useState(false);
 
   useEffect(() => {
     applyAccent(accentColor);
@@ -37,7 +57,9 @@ function NotifSettings() {
     setMotionPermission(getMotionPermissionState());
   }, []);
 
+  const isSuperuser = user?.role === 'superuser';
   const presets = getGoldPresets();
+  const latestPwaForceUpdate = pwaForceRecent[0];
 
   const updateAccent = (color: string) => {
     setAccentColor(color);
@@ -69,6 +91,52 @@ function NotifSettings() {
 
   const updateAnimationTempo = (value: number) => {
     setAnimationTempo(saveAngelAnimationTempo(value));
+  };
+
+  useEffect(() => {
+    if (!isSuperuser) return;
+
+    let cancelled = false;
+    setPwaForceLoading(true);
+
+    getPwaForceUpdateAdmin()
+      .then((data) => {
+        if (cancelled) return;
+        setPwaForceAgencies(data.agencies);
+        setPwaForceRecent(data.recent);
+      })
+      .catch(() => {
+        if (!cancelled) toast.error('Не вдалося завантажити PWA оновлення');
+      })
+      .finally(() => {
+        if (!cancelled) setPwaForceLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isSuperuser]);
+
+  const handleForcePwaUpdate = async () => {
+    if (pwaForceSubmitting) return;
+
+    setPwaForceSubmitting(true);
+    try {
+      const row = await createPwaForceUpdate(
+        pwaForceTarget === PWA_FORCE_ALL_AGENCIES ? null : pwaForceTarget,
+      );
+      setPwaForceRecent((recent) => [row, ...recent].slice(0, 10));
+      toast.success('Примусове оновлення PWA запущено');
+    } catch {
+      toast.error('Не вдалося запустити PWA оновлення');
+    } finally {
+      setPwaForceSubmitting(false);
+    }
+  };
+
+  const getPwaForceTargetName = (targetAgencyId: string | null) => {
+    if (!targetAgencyId) return 'Усі агенції';
+    return pwaForceAgencies.find((agency) => agency.id === targetAgencyId)?.name ?? targetAgencyId;
   };
 
   const motionStatus =
@@ -112,6 +180,88 @@ function NotifSettings() {
       </div>
 
       <div style={{ padding: '4px 12px 12px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {isSuperuser && (
+          <section className="glass" style={{ borderRadius: 22, padding: '4px 16px 14px' }}>
+            <SRow
+              icon={<RefreshCw size={16} color="var(--gold-text)" />}
+              label="Примусове оновлення PWA"
+              sublabel={
+                latestPwaForceUpdate
+                  ? `Останній запуск: ${formatPwaForceDate(latestPwaForceUpdate.created_at)}`
+                  : 'Запусків ще не було'
+              }
+              right={null}
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingLeft: 40 }}>
+              <select
+                value={pwaForceTarget}
+                onChange={(e) => setPwaForceTarget(e.target.value)}
+                disabled={pwaForceLoading || pwaForceSubmitting}
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid var(--glass-stroke)',
+                  borderRadius: 10,
+                  padding: '8px 10px',
+                  fontSize: 14,
+                  color: 'var(--gold-text-strong)',
+                  outline: 'none',
+                }}
+              >
+                <option value={PWA_FORCE_ALL_AGENCIES} style={{ background: '#1A1308' }}>
+                  Усі агенції
+                </option>
+                {pwaForceAgencies.map((agency) => (
+                  <option key={agency.id} value={agency.id} style={{ background: '#1A1308' }}>
+                    {agency.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleForcePwaUpdate}
+                disabled={pwaForceLoading || pwaForceSubmitting}
+                style={{
+                  height: 40,
+                  borderRadius: 12,
+                  border: '1px solid var(--accent-18)',
+                  background: 'var(--gold-grad)',
+                  color: '#1A1308',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  opacity: pwaForceLoading || pwaForceSubmitting ? 0.72 : 1,
+                  cursor: pwaForceLoading || pwaForceSubmitting ? 'default' : 'pointer',
+                }}
+              >
+                <RefreshCw size={16} />
+                {pwaForceSubmitting ? 'Запускається...' : 'Запустити'}
+              </button>
+              {pwaForceRecent.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {pwaForceRecent.slice(0, 3).map((row) => (
+                    <div
+                      key={row.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                        fontSize: 12,
+                        color: 'var(--txt-dim)',
+                      }}
+                    >
+                      <span>{getPwaForceTargetName(row.target_agency_id)}</span>
+                      <span>{formatPwaForceDate(row.created_at)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* Accent color */}
         <section className="glass" style={{ borderRadius: 22, padding: '14px 16px' }}>
           <div

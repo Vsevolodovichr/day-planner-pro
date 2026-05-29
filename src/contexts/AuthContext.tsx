@@ -3,6 +3,7 @@ import type { z } from 'zod';
 import { toast } from 'sonner';
 import { cloudflareApi } from '@/integrations/cloudflare/client';
 import { UserSchema } from '@/lib/schemas';
+import { startPwaForceUpdatePolling } from '@/lib/pwaForceUpdate';
 
 export type Profile = z.infer<typeof UserSchema>;
 
@@ -154,6 +155,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => window.clearTimeout(timeoutId);
   }, [delayPwaUpdateUntilLogin, loading, pendingPwaUpdate, user]);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    return startPwaForceUpdatePolling();
+  }, [loading, user]);
 
   const signIn = useCallback(
     async (email: string, password: string) => {
