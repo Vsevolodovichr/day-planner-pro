@@ -16,6 +16,14 @@ export type Task = {
   contact?: string;
   color?: string;
   plannerOrder?: number;
+  scheduleForceEnabled?: boolean;
+  scheduleInferredStatus?: 'available' | 'busy' | 'absent' | null;
+  scheduleInferenceConfidence?: number | null;
+  scheduleInferenceReason?: string | null;
+  scheduleInferenceKeyword?: string | null;
+  scheduleInferenceSource?: string | null;
+  scheduleTag?: string | null;
+  scheduleDurationMinutes?: number | null;
   createdAt: string;
   folderId?: string;
 };

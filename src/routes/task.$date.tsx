@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { ChevronLeft, Check, ChevronDown, Clock, Repeat2, Sparkles, Palette } from 'lucide-react';
+import { CalendarClock, ChevronLeft, Check, ChevronDown, Clock, Repeat2, Sparkles, Palette } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
 import { IOSSwitch } from '../components/IOSSwitch';
 import { SortableTaskList } from '../components/SortableTaskList';
@@ -98,6 +98,7 @@ function TaskEditor() {
   const [time, setTime] = useState(existing?.time ?? '');
   const [color, setColor] = useState(existing?.color ?? '#F8DC8A');
   const [hasTime, setHasTime] = useState(Boolean(existing?.time));
+  const [scheduleForce, setScheduleForce] = useState(Boolean(existing?.scheduleForceEnabled));
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [repeat, setRepeat] = useState<RepeatValue>(existingRepeat);
   const [showRepeatPicker, setShowRepeatPicker] = useState(false);
@@ -120,6 +121,7 @@ function TaskEditor() {
     setTitle(taskText(existing));
     setTime(existing.time ?? '');
     setHasTime(Boolean(existing.time));
+    setScheduleForce(Boolean(existing.scheduleForceEnabled));
     setRepeat(existing?.recurrenceParentId && recurrenceParent ? recurrenceParent.repeat ?? 'none' : existing.repeat ?? 'none');
     setAutoMove(Boolean(existing.autoMove));
     setAutoMoveMode(existing.autoMoveMode ?? 'next_day');
@@ -282,6 +284,10 @@ function TaskEditor() {
 
   const submit = (scope?: RecurrenceScope) => {
     if (!title.trim()) return navigate({ to: '/', search: { date } });
+    if (scheduleForce && (!date || !hasTime || !time)) {
+      toast.error('Для додавання в Розклад вкажіть дату і час');
+      return;
+    }
 
     if (existing && recurrenceBase && !scope) {
       setRecurrenceAction({ type: 'edit' });
@@ -302,6 +308,7 @@ function TaskEditor() {
       autoMove,
       autoMoveMode: autoMove ? autoMoveMode : undefined,
       color,
+      scheduleForceEnabled: scheduleForce,
       createdAt: source?.createdAt ?? new Date().toISOString(),
       folderId: source?.folderId,
       repeatExceptions: source?.repeatExceptions,
@@ -517,6 +524,13 @@ function TaskEditor() {
               <IOSSwitch checked={hasTime} onChange={toggleTime} />
             </div>
           }
+        />
+
+        <Row
+          icon={<CalendarClock size={16} color="var(--gold-text)" />}
+          label="У Розклад"
+          sublabel="Якщо увімкнено — задача буде додана в Розклад за датою і часом. Якщо вимкнено — система додасть її тільки при точному збігу дата + час + ключове слово."
+          right={<IOSSwitch checked={scheduleForce} onChange={setScheduleForce} />}
         />
 
         {/* Repeat row */}

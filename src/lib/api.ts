@@ -24,6 +24,14 @@ type ApiTask = {
   auto_move_mode?: Task['autoMoveMode'] | null;
   color?: string | null;
   planner_order?: number | null;
+  schedule_force_enabled?: boolean | number | null;
+  schedule_inferred_status?: 'available' | 'busy' | 'absent' | null;
+  schedule_inference_confidence?: number | null;
+  schedule_inference_reason?: string | null;
+  schedule_inference_keyword?: string | null;
+  schedule_inference_source?: string | null;
+  schedule_tag?: string | null;
+  schedule_duration_minutes?: number | null;
   created_at?: string | null;
   updated_at?: string | null;
   subtasks?: ApiSubtask[] | null;
@@ -118,6 +126,14 @@ function taskFromApi(task: ApiTask): Task {
     autoMoveMode: task.auto_move_mode ?? (task.auto_move ? 'next_day' : undefined),
     color: task.color ?? undefined,
     plannerOrder: task.planner_order ?? undefined,
+    scheduleForceEnabled: Boolean(task.schedule_force_enabled),
+    scheduleInferredStatus: task.schedule_inferred_status ?? null,
+    scheduleInferenceConfidence: task.schedule_inference_confidence ?? null,
+    scheduleInferenceReason: task.schedule_inference_reason ?? null,
+    scheduleInferenceKeyword: task.schedule_inference_keyword ?? null,
+    scheduleInferenceSource: task.schedule_inference_source ?? null,
+    scheduleTag: task.schedule_tag ?? null,
+    scheduleDurationMinutes: task.schedule_duration_minutes ?? null,
     folderId: task.folder_id ?? undefined,
     createdAt: task.created_at ?? new Date().toISOString(),
   };
@@ -175,6 +191,7 @@ export async function createTask(task: Task): Promise<Task> {
       auto_move_mode: task.autoMove ? task.autoMoveMode ?? 'next_day' : null,
       color: task.color ?? null,
       planner_order: task.plannerOrder ?? null,
+      schedule_force_enabled: task.scheduleForceEnabled ?? false,
     }),
   });
   const createdTask = taskFromApi(created);
@@ -203,6 +220,7 @@ export async function updateTask(
       auto_move_mode: task.autoMove ? task.autoMoveMode ?? 'next_day' : null,
       color: task.color ?? null,
       planner_order: task.plannerOrder ?? null,
+      schedule_force_enabled: task.scheduleForceEnabled ?? false,
     }),
   });
   if (options.syncSubtasks !== false) await syncSubtasks(task.id, task.subtasks);

@@ -110,6 +110,13 @@ function actionStyle(key: string, tone: SwipeAction['tone']) {
   };
 }
 
+function scheduleLabel(task: Task): string {
+  if (task.scheduleInferredStatus === 'busy') return 'У розклад: Зайнята';
+  if (task.scheduleInferredStatus === 'absent') return 'У розклад: Відсутня';
+  if (task.scheduleInferredStatus === 'available') return 'У розклад: Вільна';
+  return 'У розклад: не додано';
+}
+
 function SwipeableTaskCard({
   id,
   swipeLeftActions,
@@ -557,6 +564,15 @@ export function TaskRow({
             }}
           >
             {text}
+          </div>
+          <div
+            style={{
+              marginTop: 5,
+              fontSize: 11,
+              color: checked ? 'var(--txt-dim)' : 'var(--txt-muted)',
+            }}
+          >
+            {scheduleLabel(task)}
           </div>
         </div>
 
