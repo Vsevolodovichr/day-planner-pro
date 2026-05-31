@@ -139,6 +139,7 @@ export const DealSchema = z.object({
 
 export const UserSchema = z.object({
   id: z.string(),
+  agency_id: nullableString.optional(),
   full_name: z.string(),
   phone: nullableString.optional(),
   email: nullishString,
@@ -228,7 +229,7 @@ export const CalendarEventSchema = z.object({
 
 export const SlotStatusSchema = z.enum(['available', 'busy', 'absent']);
 export const BookingStatusSchema = z.enum(['pending', 'confirmed', 'rejected']);
-export const SlotSourceSchema = z.enum(['manual', 'calendar']);
+export const SlotSourceSchema = z.enum(['manual', 'calendar', 'task']);
 
 export const ScheduleSlotSchema = z.object({
   id: coerceString,

@@ -110,6 +110,22 @@ function AuthGate() {
 
   if (!user && !isLoginRoute) return <Navigate to="/login" replace />;
   if (user && isLoginRoute) return <Navigate to="/" replace />;
+  if (
+    user &&
+    user.role !== 'superuser' &&
+    !(user.role === 'top_manager' && user.agency_id === 'angels')
+  ) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#050607] px-4">
+        <div className="max-w-md text-center">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">Access denied</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This planner is available only for top managers.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return <Outlet />;
 }
