@@ -17,6 +17,7 @@ import {
   updateNote,
   updateTask,
 } from '../lib/api';
+import { loadWithOfflineSnapshot, runOfflineMutation, setOfflineSnapshot } from '../lib/offlineStore';
 import { applyAutoMove } from '../lib/task-utils';
 import type { AppNotification, Folder, Task, Note } from '../types';
 
@@ -33,14 +34,25 @@ export function useTasks() {
     staleTime: STALE_TIME_MS,
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      const loaded = await getTasks();
-      const moved = applyAutoMove(loaded);
-      moved
-        .filter((task) => loaded.find((item) => item.id === task.id)?.date !== task.date)
-        .forEach((task) => {
-          void updateTask(task, { syncSubtasks: false });
-        });
-      return moved;
+      if (!user?.id) return [];
+      return loadWithOfflineSnapshot(user.id, 'tasks', async () => {
+        const loaded = await getTasks();
+        const moved = applyAutoMove(loaded);
+        moved
+          .filter((task) => loaded.find((item) => item.id === task.id)?.date !== task.date)
+          .forEach((task) => {
+            void runOfflineMutation({
+              userId: user.id,
+              kind: 'tasks',
+              operation: 'update',
+              entityId: task.id,
+              payload: task,
+              queryClient,
+              execute: () => updateTask(task, { syncSubtasks: false }),
+            });
+          });
+        return moved;
+      });
     },
   });
 
@@ -49,34 +61,63 @@ export function useTasks() {
   }, [queryClient, queryKey, user?.id]);
 
   const save = useCallback((nextTasks: Task[]) => {
+    if (!user?.id) {
+      queryClient.setQueryData(queryKey, nextTasks);
+      return;
+    }
+
+    const userId = user.id;
     const previousTasks = queryClient.getQueryData<Task[]>(queryKey) ?? [];
     queryClient.setQueryData(queryKey, nextTasks);
     const previousById = new Map(previousTasks.map((task) => [task.id, task]));
     const nextById = new Map(nextTasks.map((task) => [task.id, task]));
 
+    void setOfflineSnapshot(userId, 'tasks', nextTasks);
+
     previousTasks
       .filter((task) => !nextById.has(task.id))
       .forEach((task) => {
-        void deleteTask(task.id);
+        void runOfflineMutation({
+          userId,
+          kind: 'tasks',
+          operation: 'delete',
+          entityId: task.id,
+          payload: null,
+          queryClient,
+          execute: () => deleteTask(task.id),
+        });
       });
 
     nextTasks.forEach((task) => {
       const previous = previousById.get(task.id);
       if (!previous) {
-        void createTask(task).then((created) => {
-          queryClient.setQueryData<Task[]>(queryKey, (current = []) =>
-            current.map((item) => (item.id === task.id ? created : item)),
-          );
+        void runOfflineMutation({
+          userId,
+          kind: 'tasks',
+          operation: 'create',
+          entityId: task.id,
+          payload: task,
+          queryClient,
+          execute: () => createTask(task),
         });
         return;
       }
       if (JSON.stringify(previous) !== JSON.stringify(task)) {
-        void updateTask(task, {
-          syncSubtasks: JSON.stringify(previous.subtasks) !== JSON.stringify(task.subtasks),
+        void runOfflineMutation({
+          userId,
+          kind: 'tasks',
+          operation: 'update',
+          entityId: task.id,
+          payload: task,
+          queryClient,
+          execute: () =>
+            updateTask(task, {
+              syncSubtasks: JSON.stringify(previous.subtasks) !== JSON.stringify(task.subtasks),
+            }),
         });
       }
     });
-  }, [queryClient, queryKey]);
+  }, [queryClient, queryKey, user?.id]);
 
   return { tasks, save };
 }
@@ -89,12 +130,19 @@ export function useNotes() {
     queryKey,
     enabled: Boolean(user?.id),
     staleTime: STALE_TIME_MS,
-    queryFn: getNotes,
+    queryFn: () => (user?.id ? loadWithOfflineSnapshot(user.id, 'notes', getNotes) : []),
   });
 
   const save = useCallback(async (nextNotes: Note[]) => {
+    if (!user?.id) {
+      queryClient.setQueryData(queryKey, nextNotes);
+      return;
+    }
+
+    const userId = user.id;
     const previousNotes = queryClient.getQueryData<Note[]>(queryKey) ?? [];
     queryClient.setQueryData(queryKey, nextNotes);
+    void setOfflineSnapshot(userId, 'notes', nextNotes);
     const previousById = new Map(previousNotes.map((note) => [note.id, note]));
     const nextById = new Map(nextNotes.map((note) => [note.id, note]));
     const operations: Promise<unknown>[] = [];
@@ -102,28 +150,52 @@ export function useNotes() {
     previousNotes
       .filter((note) => !nextById.has(note.id))
       .forEach((note) => {
-        operations.push(deleteNote(note.id));
+        operations.push(
+          runOfflineMutation({
+            userId,
+            kind: 'notes',
+            operation: 'delete',
+            entityId: note.id,
+            payload: null,
+            queryClient,
+            execute: () => deleteNote(note.id),
+          }),
+        );
       });
 
     nextNotes.forEach((note) => {
       const previous = previousById.get(note.id);
       if (!previous) {
         operations.push(
-          createNote(note).then((created) => {
-            queryClient.setQueryData<Note[]>(queryKey, (current = []) =>
-              current.map((item) => (item.id === note.id ? created : item)),
-            );
+          runOfflineMutation({
+            userId,
+            kind: 'notes',
+            operation: 'create',
+            entityId: note.id,
+            payload: note,
+            queryClient,
+            execute: () => createNote(note),
           }),
         );
         return;
       }
       if (JSON.stringify(previous) !== JSON.stringify(note)) {
-        operations.push(updateNote(note));
+        operations.push(
+          runOfflineMutation({
+            userId,
+            kind: 'notes',
+            operation: 'update',
+            entityId: note.id,
+            payload: note,
+            queryClient,
+            execute: () => updateNote(note),
+          }),
+        );
       }
     });
 
     await Promise.all(operations);
-  }, [queryClient, queryKey]);
+  }, [queryClient, queryKey, user?.id]);
 
   return { notes, save };
 }
@@ -137,37 +209,65 @@ export function useFolders() {
     queryKey,
     enabled: Boolean(user?.id),
     staleTime: STALE_TIME_MS,
-    queryFn: getFolders,
+    queryFn: () => (user?.id ? loadWithOfflineSnapshot(user.id, 'folders', getFolders) : []),
   });
 
   const save = useCallback((nextFolders: Folder[]) => {
+    if (!user?.id) {
+      queryClient.setQueryData(queryKey, nextFolders);
+      return;
+    }
+
+    const userId = user.id;
     const previousFolders = queryClient.getQueryData<Folder[]>(queryKey) ?? [];
     queryClient.setQueryData(queryKey, nextFolders);
 
     const previousById = new Map(previousFolders.map((folder) => [folder.id, folder]));
     const nextById = new Map(nextFolders.map((folder) => [folder.id, folder]));
 
+    void setOfflineSnapshot(userId, 'folders', nextFolders);
+
     previousFolders
       .filter((folder) => !nextById.has(folder.id))
       .forEach((folder) => {
-        void deleteFolder(folder.id);
+        void runOfflineMutation({
+          userId,
+          kind: 'folders',
+          operation: 'delete',
+          entityId: folder.id,
+          payload: null,
+          queryClient,
+          execute: () => deleteFolder(folder.id),
+        });
       });
 
     nextFolders.forEach((folder) => {
       const previous = previousById.get(folder.id);
       if (!previous) {
-        void createFolder(folder).then((created) => {
-          queryClient.setQueryData<Folder[]>(queryKey, (current = []) =>
-            current.map((item) => (item.id === folder.id ? created : item)),
-          );
+        void runOfflineMutation({
+          userId,
+          kind: 'folders',
+          operation: 'create',
+          entityId: folder.id,
+          payload: folder,
+          queryClient,
+          execute: () => createFolder(folder),
         });
         return;
       }
       if (JSON.stringify(previous) !== JSON.stringify(folder)) {
-        void updateFolder(folder);
+        void runOfflineMutation({
+          userId,
+          kind: 'folders',
+          operation: 'update',
+          entityId: folder.id,
+          payload: folder,
+          queryClient,
+          execute: () => updateFolder(folder),
+        });
       }
     });
-  }, [queryClient, queryKey]);
+  }, [queryClient, queryKey, user?.id]);
 
   return { folders, save };
 }

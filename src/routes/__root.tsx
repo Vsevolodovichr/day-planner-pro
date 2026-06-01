@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   Navigate,
@@ -10,6 +11,7 @@ import {
 
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/sonner';
+import { startOfflineSync } from '@/lib/offlineStore';
 
 function NotFoundComponent() {
   return (
@@ -88,17 +90,22 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AuthGate />
+        <AuthGate queryClient={queryClient} />
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>
   );
 }
 
-function AuthGate() {
+function AuthGate({ queryClient }: { queryClient: QueryClient }) {
   const { user, loading } = useAuth();
   const location = useLocation();
   const isLoginRoute = location.pathname === '/login';
+
+  useEffect(() => {
+    if (!user?.id) return;
+    return startOfflineSync(user.id, queryClient);
+  }, [queryClient, user?.id]);
 
   if (loading) {
     return (
