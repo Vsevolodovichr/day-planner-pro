@@ -204,7 +204,7 @@ export const TaskSchema = z.object({
   color: nullableString.optional(),
   planner_order: nullableNumber.optional(),
   schedule_force_enabled: z.union([z.boolean(), z.number()]).optional(),
-  schedule_inferred_status: z.enum(['available', 'busy', 'absent']).nullable().optional(),
+  schedule_inferred_status: z.enum(['available', 'busy', 'absent', 'with_agent']).nullable().optional(),
   schedule_inference_confidence: nullableNumber.optional(),
   schedule_inference_reason: nullableString.optional(),
   schedule_inference_keyword: nullableString.optional(),
@@ -227,7 +227,7 @@ export const CalendarEventSchema = z.object({
   client_id: nullableString.optional(),
 });
 
-export const SlotStatusSchema = z.enum(['available', 'busy', 'absent']);
+export const SlotStatusSchema = z.enum(['available', 'busy', 'absent', 'with_agent']);
 export const BookingStatusSchema = z.enum(['pending', 'confirmed', 'rejected']);
 export const SlotSourceSchema = z.enum(['manual', 'calendar', 'task']);
 

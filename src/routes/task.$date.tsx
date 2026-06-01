@@ -529,7 +529,7 @@ function TaskEditor() {
         <Row
           icon={<CalendarClock size={16} color="var(--gold-text)" />}
           label="У Розклад"
-          sublabel="Якщо увімкнено — задача буде додана в Розклад за датою і часом. Якщо вимкнено — система додасть її тільки при точному збігу дата + час + ключове слово."
+          sublabel="Якщо увімкнено — задача буде додана в Розклад за датою і часом. Статус можна задати #тегом у тексті: #офіс, #офісі, #полі, #виїзд."
           right={<IOSSwitch checked={scheduleForce} onChange={setScheduleForce} />}
         />
 

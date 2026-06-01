@@ -25,7 +25,7 @@ type ApiTask = {
   color?: string | null;
   planner_order?: number | null;
   schedule_force_enabled?: boolean | number | null;
-  schedule_inferred_status?: 'available' | 'busy' | 'absent' | null;
+  schedule_inferred_status?: 'available' | 'busy' | 'absent' | 'with_agent' | null;
   schedule_inference_confidence?: number | null;
   schedule_inference_reason?: string | null;
   schedule_inference_keyword?: string | null;

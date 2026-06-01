@@ -17,7 +17,7 @@ export type Task = {
   color?: string;
   plannerOrder?: number;
   scheduleForceEnabled?: boolean;
-  scheduleInferredStatus?: 'available' | 'busy' | 'absent' | null;
+  scheduleInferredStatus?: 'available' | 'busy' | 'absent' | 'with_agent' | null;
   scheduleInferenceConfidence?: number | null;
   scheduleInferenceReason?: string | null;
   scheduleInferenceKeyword?: string | null;
