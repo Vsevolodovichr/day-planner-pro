@@ -12,6 +12,7 @@ import {
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/sonner';
 import { startOfflineSync } from '@/lib/offlineStore';
+import { useTopManagerPwaBadge } from '@/hooks/usePwaBadge';
 
 function NotFoundComponent() {
   return (
@@ -101,6 +102,7 @@ function AuthGate({ queryClient }: { queryClient: QueryClient }) {
   const { user, loading } = useAuth();
   const location = useLocation();
   const isLoginRoute = location.pathname === '/login';
+  useTopManagerPwaBadge(user?.role);
 
   useEffect(() => {
     if (!user?.id) return;
