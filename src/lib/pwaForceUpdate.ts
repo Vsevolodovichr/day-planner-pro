@@ -114,7 +114,12 @@ async function checkPwaForceUpdateMarker(): Promise<void> {
     const marker = await getCurrentPwaForceUpdateMarker();
     if (!marker?.id) return;
 
-    if (getStoredValue(PWA_FORCE_UPDATE_LAST_HANDLED_KEY) === marker.id) return;
+    const lastHandledMarkerId = getStoredValue(PWA_FORCE_UPDATE_LAST_HANDLED_KEY);
+    if (!lastHandledMarkerId) {
+      setStoredValue(PWA_FORCE_UPDATE_LAST_HANDLED_KEY, marker.id);
+      return;
+    }
+    if (lastHandledMarkerId === marker.id) return;
 
     setStoredValue(PWA_FORCE_UPDATE_LAST_HANDLED_KEY, marker.id);
     await forcePwaRefresh();
