@@ -35,7 +35,7 @@ function LoginPage() {
       <div className="flex min-h-[100dvh] items-center justify-center px-5 py-8">
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-sm rounded-[28px] border border-white/10 bg-cardSoft/95 p-6"
+          className="glass w-full max-w-sm rounded-[22px] p-6"
         >
           <div className="mb-7">
             <p className="text-sm text-textMuted">Angels CRM</p>
@@ -75,7 +75,8 @@ function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="flex h-12 w-full items-center justify-center rounded-2xl bg-accent text-base font-semibold text-black disabled:opacity-60"
+            className="flex h-12 w-full items-center justify-center rounded-[14px] text-base font-semibold disabled:opacity-60"
+            style={{ background: 'var(--gold-shine)', color: '#1A1308' }}
           >
             {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Увійти'}
           </button>

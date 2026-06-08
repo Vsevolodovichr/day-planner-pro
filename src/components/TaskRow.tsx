@@ -427,7 +427,7 @@ function SwipeableTaskCard({
           willChange: 'transform',
           position: 'relative',
           zIndex: 10,
-          background: 'rgba(18,18,20,0.96)',
+          background: 'rgba(13,12,10,0.94)',
         }}
       >
         {children}
@@ -442,13 +442,14 @@ function Checkbox({ checked, size = 22 }: { checked: boolean; size?: number }) {
       style={{
         width: size,
         height: size,
-        borderRadius: '50%',
+        borderRadius: 8,
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        border: checked ? 'none' : '1.5px solid rgba(255,255,255,0.35)',
-        background: checked ? 'var(--gold-grad)' : 'transparent',
+        border: checked ? '1px solid var(--accent-60)' : '1.5px solid rgba(248,220,138,0.28)',
+        background: checked ? 'var(--gold-grad)' : 'rgba(255,255,255,0.025)',
+        boxShadow: checked ? 'inset 0 1px 0 rgba(255,255,255,0.24)' : 'none',
       }}
     >
       {checked && (
@@ -525,12 +526,10 @@ export function TaskRow({
   ].filter(Boolean) as SwipeAction[];
 
   return (
-    <div 
-     
+    <div
       style={{
-        borderBottom: '1px solid var(--hairline)',
-        
-       
+        borderBottom: variant === 'list' ? '1px solid var(--hairline)' : '1px solid var(--hairline)',
+        background: selected ? 'var(--accent-08)' : 'transparent',
       }}
     >
       <SwipeableTaskCard
@@ -548,11 +547,12 @@ export function TaskRow({
         style={{
           display: 'flex',
           alignItems: 'flex-start',
-          gap: 12,
-          minHeight: 56,
-          padding: '14px 7px',
+          gap: 10,
+          minHeight: variant === 'list' ? 58 : 62,
+          padding: variant === 'list' ? '12px 10px' : '14px 12px',
           position: 'relative',
           cursor: task.subtasks.length > 0 ? 'pointer' : 'default',
+          background: selected ? 'var(--accent-08)' : 'transparent',
         }}
       >
         <button
@@ -564,8 +564,15 @@ export function TaskRow({
           style={{
             border: 'none',
             background: 'transparent',
+            width: 44,
+            height: 44,
             padding: 0,
             cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 12,
+            flexShrink: 0,
           }}
         >
           <Checkbox checked={checked} />
@@ -584,7 +591,7 @@ export function TaskRow({
         >
           <div 
             style={{
-              fontSize: 15.5,
+              fontSize: variant === 'list' ? 14.5 : 15.5,
               letterSpacing: -0.1,
               color: checked ? 'var(--txt-dim)' : 'var(--txt-main)',
               textDecorationLine: checked ? 'line-through' : 'none',
@@ -599,9 +606,10 @@ export function TaskRow({
           </div>
           <div
             style={{
-              marginTop: 5,
+              marginTop: 6,
               fontSize: 11,
               color: checked ? 'var(--txt-dim)' : 'var(--txt-muted)',
+              letterSpacing: 0.1,
             }}
           >
             {scheduleLabel(task)}
@@ -626,11 +634,12 @@ export function TaskRow({
           <span
             aria-label={`${task.subtasks.length} підзадач`}
             style={{
-              minWidth: 35,
-              height: 35,
-              borderRadius: 10,              
-              background: subtasksOpen ? 'var(--background)' : 'transparent',
-              color: subtasksOpen ? 'var(--txt-muted)' : 'var(--txt-main)',
+              minWidth: 34,
+              height: 34,
+              borderRadius: 10,
+              border: '1px solid var(--glass-stroke)',
+              background: subtasksOpen ? 'var(--accent-10)' : 'rgba(255,255,255,0.035)',
+              color: subtasksOpen ? 'var(--gold-text-strong)' : 'var(--txt-muted)',
               padding: '0 7px',
               display: 'inline-flex',
               alignItems: 'center',
@@ -651,11 +660,12 @@ export function TaskRow({
         <div
           style={{
             borderTop: '1px solid var(--hairline)',
-            marginTop: 2,
-            paddingLeft: 30,
-            paddingRight: 18,
+            marginTop: 0,
+            paddingLeft: 42,
+            paddingRight: 12,
             paddingBottom: 10,
             paddingTop: 8,
+            background: 'rgba(255,255,255,0.018)',
           }}
         >
           {task.subtasks.map((s) => {
@@ -689,7 +699,7 @@ export function TaskRow({
                     alignItems: 'flex-start',
                     gap: 10,
                     padding: '6px 0',
-                    background: 'rgba(0,0,0,0.50)',
+                    background: 'transparent',
                   }}
                 >
                   <button
@@ -698,8 +708,13 @@ export function TaskRow({
                     style={{
                       border: 'none',
                       background: 'transparent',
+                      width: 34,
+                      height: 34,
                       padding: 0,
                       cursor: onToggleSubtask ? 'pointer' : 'default',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
                     <Checkbox checked={s.completed} size={16} />

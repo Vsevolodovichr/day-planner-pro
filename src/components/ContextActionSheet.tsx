@@ -21,7 +21,7 @@ export function ContextActionSheet({
       onClick={onClose}
     >
       <div
-        className="w-full sm:w-107 px-4 pb-[calc(6.25rem+env(safe-area-inset-bottom))] space-y-2.5"
+        className="w-full sm:w-107 px-4 pb-[calc(6.25rem+env(safe-area-inset-bottom))] flex flex-col gap-2.5"
         onClick={(e) => e.stopPropagation()}
       >
         {items.map(({ Icon, label, key }) => (
@@ -32,11 +32,16 @@ export function ContextActionSheet({
               onClose();
             }}
             className="w-full flex items-center gap-4 px-5 rounded-2xl"
-            style={{ height: 62, background: 'rgba(18,18,20,0.96)' }}
+            style={{
+              height: 62,
+              background: 'rgba(13,12,10,0.96)',
+              border: '1px solid var(--glass-stroke)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.045)',
+            }}
           >
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(66,255,244,0.12)' }}
+              style={{ background: 'var(--accent-10)', border: '1px solid var(--accent-22)' }}
             >
               <Icon size={20} strokeWidth={1.8} color="var(--accent)" />
             </div>
