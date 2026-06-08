@@ -104,7 +104,7 @@ function RecurrenceDeleteSheet({
               width: '100%',
               borderRadius: 14,
               border: '1px solid var(--accent-45)',
-              background: 'linear-gradient(180deg, var(--accent-18) 0%, var(--accent-04) 100%)',
+              background: 'var(--accent-10)',
               color: 'var(--gold-text-strong)',
               fontSize: 15,
               cursor: 'pointer',

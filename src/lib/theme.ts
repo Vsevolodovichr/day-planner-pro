@@ -1,7 +1,5 @@
-/* Theme: derive a 4-stop gold-like palette from a single accent color,
-   then push it into the CSS custom properties. Lets the user keep the
-   original "single accent color" customisation while preserving the
-   gradient look of the Black Glass + Gold theme. */
+/* Theme: derive a gold-like palette from a single accent color,
+   then push it into the CSS custom properties. */
 
 export const DEFAULT_ACCENT = '#E5C26A'; // gold-2
 
@@ -10,10 +8,10 @@ const goldPresets: { key: string; label: string; color: string }[] = [
   { key: 'classic', label: 'Класичне золото', color: '#E5B850' },
   { key: 'warm', label: 'Тепле золото', color: '#E5C26A' },
   { key: 'bronze', label: 'Бронза', color: '#C49154' },
-  { key: 'cyan', label: 'Бірюзовий', color: '#42FFF4' },
+  { key: 'sand', label: 'Пісочний', color: '#B8A36A' },
   { key: 'rose', label: 'Рожевий', color: '#F2B5A6' },
   { key: 'leaf', label: 'Зелений', color: '#B8DBA0' },
-  { key: 'violet', label: 'Фіолетовий', color: '#C7B8E8' },
+  { key: 'smoke', label: 'Димчастий', color: '#8F876F' },
 ];
 
 export function getGoldPresets() {
@@ -79,11 +77,11 @@ export function applyAccent(hex: string) {
   root.setProperty('--gold-4', c4);
   root.setProperty(
     '--gold-grad',
-    `linear-gradient(135deg, ${c1} 0%, ${c2} 35%, ${c3} 65%, ${c4} 100%)`,
+    c3,
   );
   root.setProperty(
     '--gold-shine',
-    `linear-gradient(180deg, ${c1} 0%, ${c2} 30%, ${c3} 55%, ${c4} 100%)`,
+    c3,
   );
   root.setProperty('--gold-text', c2);
   root.setProperty('--gold-text-strong', c1);

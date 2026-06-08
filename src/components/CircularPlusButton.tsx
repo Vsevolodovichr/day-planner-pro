@@ -11,15 +11,17 @@ export function CircularPlusButton({
   return (
     <button
       onClick={onClick}
-      className="rounded-full flex items-center justify-center transition-transform active:scale-95"
+      className="flex items-center justify-center transition-transform active:scale-95"
       style={{
         width: size,
         height: size,
-        background: accent ? '#191B1E' : '#202227',
-        border: accent ? '2px solid var(--accent)' : '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 14,
+        background: accent ? 'var(--gold-shine)' : 'rgba(13,12,10,0.94)',
+        border: accent ? '1px solid var(--accent-light-50)' : '1px solid var(--glass-stroke)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 14px 34px rgba(0,0,0,0.36)',
       }}
     >
-      <Plus size={28} strokeWidth={2} color={accent ? 'var(--accent)' : '#F3F4F5'} />
+      <Plus size={28} strokeWidth={2} color={accent ? '#1A1308' : 'var(--gold-text-strong)'} />
     </button>
   );
 }

@@ -142,7 +142,7 @@ export function LivingDaySphere({ greeting, name, actions }: LivingDaySphereProp
       style={{
         '--lds-tx': '0',
         '--lds-ty': '0',
-        '--lds-accent': currentMode.accent,
+        '--lds-accent': '244, 245, 247',
         '--lds-glow': String(currentMode.glow),
         '--lds-speed': `${currentMode.speed}s`,
         '--lds-tempo-scale': String(tempoScale),
@@ -154,7 +154,7 @@ export function LivingDaySphere({ greeting, name, actions }: LivingDaySphereProp
         '--lds-duration-340': `${340 * tempoScale}s`,
         '--lds-duration-360': `${360 * tempoScale}s`,
         '--lds-duration-420': `${420 * tempoScale}s`,
-        '--angel-tint': currentMode.accent,
+        '--angel-tint': '244, 245, 247',
         '--angel-depth': mode === 'focus' ? '0.72' : mode === 'night' || mode === 'silence' ? '0.62' : '0.56',
         '--angel-fx-opacity': mode === 'silence' ? '0.18' : mode === 'night' ? '0.32' : '0.46',
       } as CSSProperties}
@@ -223,7 +223,7 @@ const LDS_STYLES = `
   inset: 1px;
   border-radius: inherit;
   background:
-    linear-gradient(115deg, rgba(255, 236, 185, 0.14) 0%, transparent 18%, transparent 70%, rgba(var(--lds-accent), 0.08) 100%),
+    linear-gradient(115deg, rgba(255, 255, 255, 0.055) 0%, transparent 18%, transparent 70%, rgba(255, 255, 255, 0.035) 100%),
     radial-gradient(65% 30% at 70% 100%, rgba(0, 0, 0, 0.62) 0%, transparent 72%);
   pointer-events: none;
   z-index: 1;
@@ -248,7 +248,7 @@ const LDS_STYLES = `
 .lds-greeting {
   min-width: 0;
   color: var(--gold-text-strong);
-  filter: drop-shadow(0 0 12px rgba(var(--lds-accent), 0.12));
+  filter: none;
 }
 .lds-greeting-main,
 .lds-greeting-name {
@@ -375,8 +375,7 @@ const LDS_STYLES = `
     saturate(calc(var(--lds-base-saturate) * var(--lds-anim-saturate, 1)))
     contrast(calc(var(--lds-base-contrast) * var(--lds-anim-contrast, 1)))
     brightness(calc(var(--lds-base-bright) * var(--lds-anim-bright, 1)))
-    drop-shadow(0 18px 22px rgba(0, 0, 0, 0.58))
-    drop-shadow(0 0 18px rgba(var(--lds-accent), calc(var(--lds-glow) * 0.32)));
+    drop-shadow(0 18px 22px rgba(0, 0, 0, 0.58));
   transition: filter 3.8s ease;
 }
 .lds-angel-shadow {
@@ -386,7 +385,7 @@ const LDS_STYLES = `
   height: 19px;
   border-radius: 50%;
   background:
-    radial-gradient(ellipse at center, rgba(var(--lds-accent), 0.20) 0%, rgba(0, 0, 0, 0.54) 58%, transparent 78%);
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0.40) 0%, rgba(0, 0, 0, 0.54) 58%, transparent 78%);
   filter: blur(6px);
   transform: translate3d(calc(var(--lds-tx) * -4px), calc(var(--lds-ty) * 2px), -30px);
 }
@@ -417,7 +416,7 @@ const LDS_STYLES = `
       rgba(var(--lds-accent), 0.18) 96%,
       transparent 100%);
   opacity: 0.95;
-  filter: drop-shadow(0 0 6px rgba(var(--lds-accent), 0.35));
+  filter: none;
 }
 .living-day-sphere[data-mode="night"] .lds-mode-fx {
   overflow: hidden;

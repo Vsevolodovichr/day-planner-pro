@@ -9,7 +9,7 @@ export function IOSSwitch({
     <button
       onClick={() => onChange(!checked)}
       className="relative rounded-full transition-colors"
-      style={{ width: 51, height: 31, background: checked ? 'var(--accent)' : '#3A3D42' }}
+      style={{ width: 51, height: 31, background: checked ? 'var(--accent)' : 'rgba(255,255,255,0.12)' }}
     >
       <div
         className="absolute top-0.5 rounded-full bg-white transition-transform"
