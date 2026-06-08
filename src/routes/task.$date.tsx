@@ -415,8 +415,18 @@ function TaskEditor() {
   };
 
   const launchIosAlarms = (task: Task, previous?: Task) => {
-    if (!task.iosAlarmEnabled || previous?.iosAlarmEnabled) return;
     if (!task.date || !task.time || !task.iosAlarmOffsetMinutes?.length) return;
+    if (!task.iosAlarmEnabled) return;
+
+    const currentOffsets = [...task.iosAlarmOffsetMinutes].sort((a, b) => b - a).join(',');
+    const previousOffsets = [...(previous?.iosAlarmOffsetMinutes ?? [])].sort((a, b) => b - a).join(',');
+    const shouldLaunch =
+      !previous?.iosAlarmEnabled ||
+      previous.date !== task.date ||
+      previous.time !== task.time ||
+      previousOffsets !== currentOffsets;
+
+    if (!shouldLaunch) return;
 
     createIosShortcutAlarms({
       shortcutName: IOS_ALARM_SHORTCUT_NAME,
@@ -786,6 +796,9 @@ function TaskEditor() {
               onChange={(e) => setTime(e.target.value)}
               className="field-input"
               style={{
+                width: '100%',
+                maxWidth: '100%',
+                boxSizing: 'border-box',
                 marginBottom: 14,
                 height: 48,
                 borderRadius: 16,
