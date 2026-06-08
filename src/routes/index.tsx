@@ -341,8 +341,10 @@ export function Home() {
   } | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [recurrenceDelete, setRecurrenceDelete] = useState<RecurrenceDeleteDraft | null>(null);
+  const [weekAnimation, setWeekAnimation] = useState<'next' | 'prev' | null>(null);
   const weekTouchStart = useRef<{ x: number; y: number } | null>(null);
   const isHorizontalWeekSwipe = useRef(false);
+  const weekAnimationTimeout = useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
   const today = new Date();
 
@@ -350,10 +352,20 @@ export function Home() {
     setSelectedDate(homeDate);
   }, [homeDate]);
 
+  useEffect(() => () => {
+    if (weekAnimationTimeout.current) window.clearTimeout(weekAnimationTimeout.current);
+  }, []);
+
   const shiftWeek = (delta: number) => {
     const next = new Date(selectedDate);
     next.setDate(next.getDate() + delta * 7);
     const nextDate = toISO(next);
+    if (weekAnimationTimeout.current) window.clearTimeout(weekAnimationTimeout.current);
+    setWeekAnimation(delta > 0 ? 'next' : 'prev');
+    weekAnimationTimeout.current = window.setTimeout(() => {
+      setWeekAnimation(null);
+      weekAnimationTimeout.current = null;
+    }, 220);
     setSelectedDate(nextDate);
     navigate({ to: '/', search: { date: nextDate }, replace: true });
   };
@@ -704,36 +716,45 @@ export function Home() {
           }}
           style={{
             padding: '4px 12px 12px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1,
             touchAction: 'pan-y',
             overscrollBehavior: 'contain',
           }}
         >
-          {week.map((iso, index) => (
-            <DayCard
-              key={iso}
-              iso={iso}
-              isToday={iso === todayISO}
-              tasks={tasksForDate(tasks, iso)}
-              position={index === 0 ? 'first' : index === week.length - 1 ? 'last' : 'middle'}
-              onToggle={toggle}
-              onToggleSubtask={toggleSubtask}
-              onEditSubtask={editSubtask}
-              onDeleteSubtask={deleteSubtask}
-              onAddSubtask={(taskId) => action('subtask', [taskId], iso)}
-              onEdit={(taskId) => action('edit', [taskId], iso)}
-              onTransfer={(taskId) => action('transfer', [taskId], iso)}
-              onSend={(taskId) => action('send', [taskId], iso)}
-              onDelete={(taskId) => action('delete', [taskId], iso)}
-              onCopy={(taskId) => action('copy', [taskId], iso)}
-              onReorder={(orderedIds) => reorderDayTasks(iso, orderedIds)}
-              onSelect={select}
-              onMenu={(id) => setMenuFor({ taskId: id, date: iso })}
-              selectedIds={selection}
-            />
-          ))}
+          <div
+            key={week[0]}
+            className={
+              weekAnimation === 'next'
+                ? 'animate-in slide-in-from-right-4 fade-in duration-200'
+                : weekAnimation === 'prev'
+                  ? 'animate-in slide-in-from-left-4 fade-in duration-200'
+                  : undefined
+            }
+            style={{ display: 'flex', flexDirection: 'column', gap: 1 }}
+          >
+            {week.map((iso, index) => (
+              <DayCard
+                key={iso}
+                iso={iso}
+                isToday={iso === todayISO}
+                tasks={tasksForDate(tasks, iso)}
+                position={index === 0 ? 'first' : index === week.length - 1 ? 'last' : 'middle'}
+                onToggle={toggle}
+                onToggleSubtask={toggleSubtask}
+                onEditSubtask={editSubtask}
+                onDeleteSubtask={deleteSubtask}
+                onAddSubtask={(taskId) => action('subtask', [taskId], iso)}
+                onEdit={(taskId) => action('edit', [taskId], iso)}
+                onTransfer={(taskId) => action('transfer', [taskId], iso)}
+                onSend={(taskId) => action('send', [taskId], iso)}
+                onDelete={(taskId) => action('delete', [taskId], iso)}
+                onCopy={(taskId) => action('copy', [taskId], iso)}
+                onReorder={(orderedIds) => reorderDayTasks(iso, orderedIds)}
+                onSelect={select}
+                onMenu={(id) => setMenuFor({ taskId: id, date: iso })}
+                selectedIds={selection}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
