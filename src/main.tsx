@@ -10,6 +10,7 @@ const router = getRouter();
 const root = document.getElementById('root');
 let updateServiceWorker: ReturnType<typeof registerSW> | null = null;
 let pwaUpdateListenersAttached = false;
+let pwaUpdateReadyDispatched = false;
 
 function syncKeyboardOffset() {
   const visualViewport = window.visualViewport;
@@ -42,6 +43,9 @@ function registerPwa() {
     immediate: true,
     onNeedRefresh() {
       if (!updateServiceWorker) return;
+      if (pwaUpdateReadyDispatched) return;
+
+      pwaUpdateReadyDispatched = true;
       window.dispatchEvent(
         new CustomEvent('pwa:update-ready', { detail: { updateServiceWorker } }),
       );

@@ -24,7 +24,7 @@ export function BottomNav() {
             aria-label={label}
             className={`app-bottom-nav__item${active ? ' is-active' : ''}`}
           >
-            <Icon size={26} strokeWidth={active ? 1.7 : 1.35} />
+            <Icon size={30} strokeWidth={active ? 1.7 : 1.35} />
           </Link>
         );
       })}

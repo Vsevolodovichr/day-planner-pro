@@ -129,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .detail?.updateServiceWorker;
 
       if (!updateServiceWorker) return;
-      setPendingPwaUpdate(() => updateServiceWorker);
+      setPendingPwaUpdate((current) => current ?? updateServiceWorker);
     };
 
     window.addEventListener('pwa:update-ready', handlePwaUpdateReady);

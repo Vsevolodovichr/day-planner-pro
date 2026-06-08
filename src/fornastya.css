@@ -263,19 +263,19 @@ textarea:focus {
   display: flex;
   align-items: stretch;
   transform: translateX(-50%);
-  background: linear-gradient(180deg, hsla(0 0% 5%/ 0.95) 0%, hsla(0 0% 0%) 20%);
+  background: linear-gradient(180deg, hsla(0 0% 5%/ 0.98) 0%, hsla(0 0% 0%) 60%);
 }
 
 .app-bottom-nav__item {
   flex: 1;
   min-width: 0;
-  border-radius: 18px;
-  padding: 6px 2px;
+  border-radius: 28px;
+  padding: 10px 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 1px;
   text-decoration: none;
   color: rgba(244,245,247,0.46);
   background: transparent;
@@ -284,8 +284,7 @@ textarea:focus {
 
 .app-bottom-nav__item.is-active {
   color: var(--gold-text-strong);
-  background: linear-gradient(180deg, var(--accent-18) 0%, var(--accent-04) 100%);
-  border-color: var(--accent-40);
+  border-color: var(--accent-32);
 }
 
 .app-bottom-nav__item span {
