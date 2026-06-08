@@ -796,6 +796,9 @@ function TaskEditor() {
               onChange={(e) => setTime(e.target.value)}
               className="field-input"
               style={{
+                width: '100%',
+                maxWidth: '100%',
+                boxSizing: 'border-box',
                 marginBottom: 14,
                 height: 48,
                 borderRadius: 16,
