@@ -117,6 +117,38 @@ function scheduleLabel(task: Task): string {
   return 'У розклад: не додано';
 }
 
+function renderTextWithPhoneLinks(text: string): ReactNode {
+  const phonePattern = /\+?\(?\d[\d\s()-]{5,}\d/g;
+  const parts: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = phonePattern.exec(text))) {
+    const value = match[0];
+    const digits = value.replace(/\D/g, '');
+
+    if (digits.length < 7) continue;
+
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+
+    parts.push(
+      <a
+        key={`${match.index}-${value}`}
+        href={`tel:${value.replace(/[\s()-]/g, '')}`}
+        onClick={(event) => event.stopPropagation()}
+        style={{ color: 'inherit', textDecoration: 'underline' }}
+      >
+        {value}
+      </a>,
+    );
+    lastIndex = match.index + value.length;
+  }
+
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+
+  return parts.length ? parts : text;
+}
+
 function SwipeableTaskCard({
   id,
   swipeLeftActions,
@@ -563,7 +595,7 @@ export function TaskRow({
               
             }}
           >
-            {text}
+            {renderTextWithPhoneLinks(text)}
           </div>
           <div
             style={{
@@ -684,7 +716,7 @@ export function TaskRow({
                       lineHeight: 1.35,
                     }}
                   >
-                    {taskText(s)}
+                    {renderTextWithPhoneLinks(taskText(s))}
                   </span>
                 </div>
               </SwipeableTaskCard>
