@@ -254,7 +254,7 @@ textarea:focus {
 .app-bottom-nav {
   position: fixed;
   left: 50%;
-  bottom: var(--kb-offset, 10px);
+  bottom: calc(10px + var(--kb-offset, 0px));
   width: calc(100% - 24px);
   max-width: 406px;
   z-index: 40;
