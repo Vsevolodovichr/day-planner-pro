@@ -1,13 +1,19 @@
 import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { CalendarClock, ChevronLeft, Check, ChevronDown, Clock, Repeat2, Sparkles, Palette } from 'lucide-react';
+import { AlarmClock, CalendarClock, ChevronLeft, Check, ChevronDown, Clock, Repeat2, Sparkles, Palette } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
 import { IOSSwitch } from '../components/IOSSwitch';
 import { SortableTaskList } from '../components/SortableTaskList';
 import { useTasks } from '../components/Hooks';
 import { uid } from '../lib/storage';
 import { formatLong } from '../lib/date';
+import {
+  IOS_ALARM_SHORTCUT_INSTALL_OPENED_KEY,
+  IOS_ALARM_SHORTCUT_NAME,
+  createIosShortcutAlarms,
+  type IosAlarmOffsetMinutes,
+} from '../lib/iosShortcutAlarms';
 import type { Task } from '../types';
 import {
   newSubtask,
@@ -51,6 +57,11 @@ const autoMoveLabels: Record<AutoMoveMode, string> = {
 };
 
 const colorPresets = ['#F8DC8A', '#F2B5A6', '#8DC4DD', '#B8DBA0', '#C7B8E8', '#5A5A60'];
+const iosAlarmOffsetOptions: Array<{ value: IosAlarmOffsetMinutes; label: string }> = [
+  { value: 15, label: 'За 15 хвилин' },
+  { value: 30, label: 'За 30 хвилин' },
+  { value: 60, label: 'За 1 годину' },
+];
 
 type RecurrenceAction = { type: 'delete'; taskId: string } | { type: 'edit' };
 type RecurrenceScope = 'occurrence' | 'series';
@@ -99,6 +110,10 @@ function TaskEditor() {
   const [color, setColor] = useState(existing?.color ?? '#F8DC8A');
   const [hasTime, setHasTime] = useState(Boolean(existing?.time));
   const [scheduleForce, setScheduleForce] = useState(Boolean(existing?.scheduleForceEnabled));
+  const [iosAlarmEnabled, setIosAlarmEnabled] = useState(Boolean(existing?.iosAlarmEnabled));
+  const [iosAlarmOffsetMinutes, setIosAlarmOffsetMinutes] = useState<IosAlarmOffsetMinutes[]>(
+    existing?.iosAlarmOffsetMinutes ?? [],
+  );
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [repeat, setRepeat] = useState<RepeatValue>(existingRepeat);
   const [showRepeatPicker, setShowRepeatPicker] = useState(false);
@@ -106,6 +121,9 @@ function TaskEditor() {
   const [autoMoveMode, setAutoMoveMode] = useState<AutoMoveMode>(existing?.autoMoveMode ?? 'next_day');
   const [showAutoMovePicker, setShowAutoMovePicker] = useState(false);
   const [recurrenceAction, setRecurrenceAction] = useState<RecurrenceAction | null>(null);
+  const [hasOpenedShortcutInstall] = useState(
+    () => window.localStorage.getItem(IOS_ALARM_SHORTCUT_INSTALL_OPENED_KEY) === 'true',
+  );
   const titleInputRef = useRef<HTMLTextAreaElement | null>(null);
   const dayTasks = tasksForDate(tasks, date);
 
@@ -122,6 +140,8 @@ function TaskEditor() {
     setTime(existing.time ?? '');
     setHasTime(Boolean(existing.time));
     setScheduleForce(Boolean(existing.scheduleForceEnabled));
+    setIosAlarmEnabled(Boolean(existing.iosAlarmEnabled));
+    setIosAlarmOffsetMinutes(existing.iosAlarmOffsetMinutes ?? []);
     setRepeat(existing?.recurrenceParentId && recurrenceParent ? recurrenceParent.repeat ?? 'none' : existing.repeat ?? 'none');
     setAutoMove(Boolean(existing.autoMove));
     setAutoMoveMode(existing.autoMoveMode ?? 'next_day');
@@ -135,8 +155,25 @@ function TaskEditor() {
       setShowTimePicker(true);
     } else {
       setTime('');
+      setIosAlarmEnabled(false);
       setShowTimePicker(false);
     }
+  };
+
+  const toggleIosAlarm = (checked: boolean) => {
+    if (checked && (!date || !hasTime || !time)) {
+      toast.error('Для створення iOS-будильника потрібно вказати точний час задачі.');
+      return;
+    }
+    setIosAlarmEnabled(checked);
+  };
+
+  const toggleIosAlarmOffset = (offset: IosAlarmOffsetMinutes) => {
+    setIosAlarmOffsetMinutes((current) =>
+      current.includes(offset)
+        ? current.filter((item) => item !== offset)
+        : [...current, offset].sort((a, b) => b - a),
+    );
   };
 
   const toggleRepeat = (checked: boolean) => {
@@ -288,6 +325,17 @@ function TaskEditor() {
       toast.error('Для додавання в Розклад вкажіть дату і час');
       return;
     }
+    if (iosAlarmEnabled && (!date || !hasTime || !time)) {
+      toast.error('Для створення iOS-будильника потрібно вказати точний час задачі.');
+      return;
+    }
+
+    let nextIosAlarmOffsetMinutes = iosAlarmOffsetMinutes;
+    if (iosAlarmEnabled && nextIosAlarmOffsetMinutes.length === 0) {
+      nextIosAlarmOffsetMinutes = [60];
+      setIosAlarmOffsetMinutes(nextIosAlarmOffsetMinutes);
+      toast.info('Для iOS-будильника автоматично вибрано нагадування за 1 годину.');
+    }
 
     if (existing && recurrenceBase && !scope) {
       setRecurrenceAction({ type: 'edit' });
@@ -309,6 +357,8 @@ function TaskEditor() {
       autoMoveMode: autoMove ? autoMoveMode : undefined,
       color,
       scheduleForceEnabled: scheduleForce,
+      iosAlarmEnabled,
+      iosAlarmOffsetMinutes: iosAlarmEnabled ? nextIosAlarmOffsetMinutes : undefined,
       createdAt: source?.createdAt ?? new Date().toISOString(),
       folderId: source?.folderId,
       repeatExceptions: source?.repeatExceptions,
@@ -332,6 +382,7 @@ function TaskEditor() {
         return task;
       });
       save(existing.recurrenceParentId ? updatedTasks : [...updatedTasks, occurrence]);
+      launchIosAlarms(occurrence, existing);
       navigate({ to: '/', search: { date } });
       return;
     }
@@ -350,6 +401,7 @@ function TaskEditor() {
         ? tasks.filter((task) => task.id !== existing.id)
         : tasks;
       save(sourceTasks.map((task) => (task.id === recurrenceBase.id ? nextSeries : task)));
+      launchIosAlarms(nextSeries, recurrenceBase);
       navigate({ to: '/', search: { date } });
       return;
     }
@@ -358,7 +410,21 @@ function TaskEditor() {
     save(
       existing ? tasks.map((task) => (task.id === existing.id ? next : task)) : [...tasks, next],
     );
+    launchIosAlarms(next, existing);
     navigate({ to: '/', search: { date } });
+  };
+
+  const launchIosAlarms = (task: Task, previous?: Task) => {
+    if (!task.iosAlarmEnabled || previous?.iosAlarmEnabled) return;
+    if (!task.date || !task.time || !task.iosAlarmOffsetMinutes?.length) return;
+
+    createIosShortcutAlarms({
+      shortcutName: IOS_ALARM_SHORTCUT_NAME,
+      taskId: task.id,
+      taskTitle: taskText(task),
+      taskDateTime: `${task.date}T${task.time}:00`,
+      offsetsMinutes: task.iosAlarmOffsetMinutes,
+    });
   };
 
   const topBtn: React.CSSProperties = {
@@ -525,6 +591,52 @@ function TaskEditor() {
             </div>
           }
         />
+
+        <Row
+          icon={<AlarmClock size={16} color="var(--gold-text)" />}
+          label="Створити iOS-будильник"
+          sublabel={
+            iosAlarmEnabled && !hasOpenedShortcutInstall
+              ? 'Спочатку створіть iOS-команду в налаштуваннях, інакше будильник не буде створено.'
+              : undefined
+          }
+          right={<IOSSwitch checked={iosAlarmEnabled} onChange={toggleIosAlarm} />}
+        />
+
+        {iosAlarmEnabled && (
+          <div
+            className="glass"
+            style={{
+              borderRadius: 22,
+              padding: '14px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+            }}
+          >
+            {iosAlarmOffsetOptions.map((option) => (
+              <label
+                key={option.value}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  color: 'var(--txt-main)',
+                  fontSize: 14,
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={iosAlarmOffsetMinutes.includes(option.value)}
+                  onChange={() => toggleIosAlarmOffset(option.value)}
+                  style={{ accentColor: 'var(--gold-text)' }}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+        )}
 
         <Row
           icon={<CalendarClock size={16} color="var(--gold-text)" />}

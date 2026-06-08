@@ -24,6 +24,8 @@ export type Task = {
   scheduleInferenceSource?: string | null;
   scheduleTag?: string | null;
   scheduleDurationMinutes?: number | null;
+  iosAlarmEnabled?: boolean;
+  iosAlarmOffsetMinutes?: Array<15 | 30 | 60>;
   createdAt: string;
   folderId?: string;
 };

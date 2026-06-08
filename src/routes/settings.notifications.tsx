@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { Bell, Palette, Clock, Music2, RefreshCw } from 'lucide-react';
+import { Bell, Palette, Clock, Music2, RefreshCw, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '../components/AppShell';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,6 +20,13 @@ import {
   type PwaForceAgency,
   type PwaForceUpdateRow,
 } from '../lib/pwaForceUpdate';
+import {
+  IOS_ALARM_SHORTCUT_INSTALL_FALLBACK_URL,
+  IOS_ALARM_SHORTCUT_INSTALL_OPENED_KEY,
+  IOS_ALARM_SHORTCUT_INSTALL_URL,
+  IOS_ALARM_SHORTCUT_NAME,
+  isIosDevice,
+} from '../lib/iosShortcutAlarms';
 import type { NotificationSettings } from '../types';
 
 export const Route = createFileRoute('/settings/notifications')({ component: NotifSettings });
@@ -36,6 +43,7 @@ function NotifSettings() {
   const [accentColor, setAccentColor] = useState<string>(loadAccent());
   const [motionPermission, setMotionPermission] = useState<MotionPermissionState>('prompt');
   const [animationTempo, setAnimationTempo] = useState(() => loadAngelAnimationTempo());
+  const [iosDevice, setIosDevice] = useState(false);
   const [s, setS] = useState<NotificationSettings>({
     enabled: false,
     silent: true,
@@ -55,6 +63,7 @@ function NotifSettings() {
 
   useEffect(() => {
     setMotionPermission(getMotionPermissionState());
+    setIosDevice(isIosDevice());
   }, []);
 
   const isSuperuser = user?.role === 'superuser';
@@ -91,6 +100,11 @@ function NotifSettings() {
 
   const updateAnimationTempo = (value: number) => {
     setAnimationTempo(saveAngelAnimationTempo(value));
+  };
+
+  const openIosShortcutInstall = () => {
+    window.localStorage.setItem(IOS_ALARM_SHORTCUT_INSTALL_OPENED_KEY, 'true');
+    window.location.href = IOS_ALARM_SHORTCUT_INSTALL_URL || IOS_ALARM_SHORTCUT_INSTALL_FALLBACK_URL;
   };
 
   useEffect(() => {
@@ -393,6 +407,41 @@ function NotifSettings() {
             </div>
           </div>
         </section>
+
+        {iosDevice && (
+          <section
+            className="glass"
+            style={{
+              borderRadius: 22,
+              padding: '4px 16px',
+            }}
+          >
+            <SRow
+              icon={<Smartphone size={16} color="var(--gold-text)" />}
+              label="iOS-будильник"
+              sublabel={IOS_ALARM_SHORTCUT_NAME}
+              right={
+                <button
+                  type="button"
+                  onClick={openIosShortcutInstall}
+                  style={{
+                    border: '1px solid var(--accent-light-50)',
+                    background: 'var(--gold-shine)',
+                    color: '#1A1308',
+                    borderRadius: 999,
+                    padding: '8px 14px',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Створити команду
+                </button>
+              }
+            />
+          </section>
+        )}
 
         {/* Notifications group */}
         <section

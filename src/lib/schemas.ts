@@ -211,6 +211,8 @@ export const TaskSchema = z.object({
   schedule_inference_source: nullableString.optional(),
   schedule_tag: nullableString.optional(),
   schedule_duration_minutes: nullableNumber.optional(),
+  ios_alarm_enabled: z.union([z.boolean(), z.number()]).optional(),
+  ios_alarm_offset_minutes: z.union([z.array(z.number()), z.string(), z.null()]).optional(),
   created_at: z.string(),
   updated_at: nullishString,
 });

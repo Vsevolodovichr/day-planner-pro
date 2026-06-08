@@ -32,6 +32,8 @@ type ApiTask = {
   schedule_inference_source?: string | null;
   schedule_tag?: string | null;
   schedule_duration_minutes?: number | null;
+  ios_alarm_enabled?: boolean | number | null;
+  ios_alarm_offset_minutes?: number[] | string | null;
   created_at?: string | null;
   updated_at?: string | null;
   subtasks?: ApiSubtask[] | null;
@@ -86,6 +88,21 @@ function stringArrayPayload(value: string[] | string | null | undefined): string
   }
 }
 
+function iosAlarmOffsetPayload(value: number[] | string | null | undefined): Task['iosAlarmOffsetMinutes'] {
+  let offsets: unknown;
+  if (Array.isArray(value)) {
+    offsets = value;
+  } else if (typeof value === 'string') {
+    try {
+      offsets = JSON.parse(value);
+    } catch {
+      return undefined;
+    }
+  }
+  if (!Array.isArray(offsets)) return undefined;
+  return offsets.filter((item): item is 15 | 30 | 60 => item === 15 || item === 30 || item === 60);
+}
+
 async function requestPaged<T>(path: string): Promise<T[]> {
   const items: T[] = [];
   let cursor: string | null | undefined;
@@ -134,6 +151,8 @@ function taskFromApi(task: ApiTask): Task {
     scheduleInferenceSource: task.schedule_inference_source ?? null,
     scheduleTag: task.schedule_tag ?? null,
     scheduleDurationMinutes: task.schedule_duration_minutes ?? null,
+    iosAlarmEnabled: Boolean(task.ios_alarm_enabled),
+    iosAlarmOffsetMinutes: iosAlarmOffsetPayload(task.ios_alarm_offset_minutes),
     folderId: task.folder_id ?? undefined,
     createdAt: task.created_at ?? new Date().toISOString(),
   };
@@ -192,6 +211,8 @@ export async function createTask(task: Task): Promise<Task> {
       color: task.color ?? null,
       planner_order: task.plannerOrder ?? null,
       schedule_force_enabled: task.scheduleForceEnabled ?? false,
+      ios_alarm_enabled: task.iosAlarmEnabled ?? false,
+      ios_alarm_offset_minutes: task.iosAlarmOffsetMinutes ?? null,
     }),
   });
   const createdTask = taskFromApi(created);
@@ -221,6 +242,8 @@ export async function updateTask(
       color: task.color ?? null,
       planner_order: task.plannerOrder ?? null,
       schedule_force_enabled: task.scheduleForceEnabled ?? false,
+      ios_alarm_enabled: task.iosAlarmEnabled ?? false,
+      ios_alarm_offset_minutes: task.iosAlarmOffsetMinutes ?? null,
     }),
   });
   if (options.syncSubtasks !== false) await syncSubtasks(task.id, task.subtasks);
