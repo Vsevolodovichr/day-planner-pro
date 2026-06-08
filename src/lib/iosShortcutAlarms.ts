@@ -1,5 +1,5 @@
 export const IOS_ALARM_SHORTCUT_NAME = "PWA Будильник";
-export const IOS_ALARM_SHORTCUT_INSTALL_URL = "https://www.icloud.com/shortcuts/722425ee7a5a426bb941d717fa3f5768";
+export const IOS_ALARM_SHORTCUT_INSTALL_URL = "https://www.icloud.com/shortcuts/2701d6c0b12a4b46a7bcc35d447db2af";
 export const IOS_ALARM_SHORTCUT_INSTALL_FALLBACK_URL = "shortcuts://create-shortcut";
 export const IOS_ALARM_SHORTCUT_INSTALL_OPENED_KEY = "ios_alarm_shortcut_install_opened";
 
